@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id    Int      @id @default(autoincrement())
+  name       String
+  email      String   @unique
+  password_hash String
+  created_at DateTime @default(now())
+
+  tasks       Task[]
+  daily_plans DailyPlan[]
+}
+
+model Task {
+  task_id           Int      @id @default(autoincrement())
+  user_id           Int
+  title             String
+  description       String?
+  deadline          DateTime
+  estimated_minutes Int
+  importance_hint   Importance?
+  status            Status   @default(pending)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [user_id])
+
+  ai_analysis AiTaskAnalysis[]   // one task → multiple AI analyses
+  plan_items  DailyPlanItem[]
+  reminders   Reminder[]
+}
+
+model AiTaskAnalysis {
+  analysis_id          Int      @id @default(autoincrement())
+  task_id              Int
+  predicted_priority   Importance
+  reason               String?
+  confidence_score     Float?
+  suggested_date       DateTime?
+  suggested_start_time DateTime?
+  created_at           DateTime @default(now())
+
+  task Task @relation(fields: [task_id], references: [task_id])
+}
+
+model DailyPlan {
+  plan_id      Int      @id @default(autoincrement())
+  user_id      Int
+  plan_date    DateTime
+  generated_at DateTime @default(now())
+
+  user  User @relation(fields: [user_id], references: [user_id])
+  items DailyPlanItem[]
+
+  @@unique([user_id, plan_date])   // one plan per user per day
+}
+
+model DailyPlanItem {
+  plan_item_id Int    @id @default(autoincrement())
+  plan_id      Int
+  task_id      Int
+  start_time   DateTime
+  end_time     DateTime
+  slot_order   Int
+  item_status  PlanStatus @default(scheduled)
+
+  plan DailyPlan @relation(fields: [plan_id], references: [plan_id])
+  task Task      @relation(fields: [task_id], references: [task_id])
+}
+
+model Reminder {
+  reminder_id Int      @id @default(autoincrement())
+  task_id     Int
+  remind_at   DateTime
+  frequency   Frequency @default(once)
+  is_active   Boolean   @default(true)
+
+  task Task @relation(fields: [task_id], references: [task_id])
+}
+
+enum Importance {
+  low
+  medium
+  high
+}
+
+enum Status {
+  pending
+  in_progress
+  completed
+  missed
+}
+
+enum PlanStatus {
+  scheduled
+  done
+  skipped
+  moved
+}
+
+enum Frequency {
+  once
+  daily
+  weekly
+  custom
+}
