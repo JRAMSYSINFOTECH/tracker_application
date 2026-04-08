@@ -1,25 +1,34 @@
-const prisma = require("../config/prisma");
+import prisma from "../config/prisma.js";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
-// please fin d the SIGNUP
-exports.signup = async (req, res) => {
+// Signup
+export const signup = async (req, res) => {
+  const { name, email, password } = req.body;
+  const emailLower = email.toLowerCase();
+
   try {
-    const { name, email, password } = req.body;
-
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
+    const existing = await prisma.user.findUnique({
+      where: { email: emailLower }
     });
 
-    if (existingUser) {
+    if (existing) {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    const hashedPassword = await bcrypt.hash(password, 10);
+
     const user = await prisma.user.create({
-      data: { name, email, password_hash: password }
+      data: {
+        name,
+        email: emailLower,
+        password_hash: hashedPassword
+      }
     });
 
-    res.json({
-      message: "User created successfully",
-      user
+    res.status(201).json({
+      message: "User registered successfully",
+      userId: user.user_id
     });
 
   } catch (err) {
@@ -27,22 +36,36 @@ exports.signup = async (req, res) => {
   }
 };
 
-// please find the LOGIN
-exports.login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
+// Login
+export const login = async (req, res) => {
+  const { email, password } = req.body;
+  const emailLower = email.toLowerCase();
 
+  try {
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email: emailLower }
     });
 
-    if (!user || user.password_hash !== password) {
-      return res.status(401).json({ message: "Invalid credentials" });
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
     }
+
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+
+    if (!isMatch) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    const token = jwt.sign(
+      { id: user.user_id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
     res.json({
       message: "Login successful",
-      user
+      token,
+      userId: user.user_id
     });
 
   } catch (err) {
