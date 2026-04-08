@@ -1,4 +1,5 @@
 const prisma = require("../config/prisma");
+const bcrypt = require("bcrypt");
 
 // please fin d the SIGNUP
 exports.signup = async (req, res) => {
@@ -13,8 +14,11 @@ exports.signup = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    // Hash the password before storing it    
+    const passwordHash = await bcrypt.hash(password, 10);
+
     const user = await prisma.user.create({
-      data: { name, email, password_hash: password }
+      data: { name, email, password_hash: passwordHash }
     });
 
     res.json({
@@ -36,7 +40,14 @@ exports.login = async (req, res) => {
       where: { email }
     });
 
-    if (!user || user.password_hash !== password) {
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Compare the provided password with the stored hash
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+
+    if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
