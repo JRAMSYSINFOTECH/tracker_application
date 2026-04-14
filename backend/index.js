@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
+console.log("Cloudinary Name:", process.env.CLOUDINARY_CLOUD_NAME);
 
 import app from "./src/app.js";
 import open from "open";

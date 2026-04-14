@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
   provider = "prisma-client-js"
@@ -14,14 +12,16 @@ datasource db {
 }
 
 model User {
-  user_id    Int      @id @default(autoincrement())
-  name       String
-  email      String   @unique
-  password_hash String
-  created_at DateTime @default(now())
-
-  tasks       Task[]
-  daily_plans DailyPlan[]
+  user_id        Int      @id @default(autoincrement())
+  name           String
+  email          String   @unique
+  password_hash  String
+  gender         String?      // optional
+  phone          String?      @unique
+  profile_pic    String?      // store image URL/path
+  created_at     DateTime @default(now())
+  tasks          Task[]
+  daily_plans    DailyPlan[]
 }
 
 model Task {
@@ -72,8 +72,8 @@ model DailyPlanItem {
   plan_item_id Int    @id @default(autoincrement())
   plan_id      Int
   task_id      Int
-  start_time   DateTime
-  end_time     DateTime
+  start_time   DateTime?
+  end_time     DateTime?
   slot_order   Int
   item_status  PlanStatus @default(scheduled)
 

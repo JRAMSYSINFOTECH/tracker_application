@@ -1,6 +1,7 @@
 import prisma from "../config/prisma.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import cloudinary from "../config/cloudinary.js";
 
 // Signup
 export const signup = async (req, res) => {
@@ -66,6 +67,49 @@ export const login = async (req, res) => {
       message: "Login successful",
       token,
       userId: user.user_id
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Update User Profile
+export const updateUserProfile = async (req, res) => {
+  const userId = req.user.id;
+  const { name, email, phone, gender } = req.body;
+
+  try {
+    // ✅ Check if phone already used by another user
+    if (phone) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          phone: phone,
+          NOT: { user_id: userId }
+        }
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          message: "Phone number already in use"
+        });
+      }
+    }
+
+    // ✅ Update user
+    const updatedUser = await prisma.user.update({
+      where: { user_id: userId },
+      data: {
+        name,
+        email,
+        phone,
+        gender
+      }
+    });
+
+    res.json({
+      message: "Profile updated successfully",
+      user: updatedUser
     });
 
   } catch (err) {
