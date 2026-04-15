@@ -54,20 +54,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-
   content: {
-  flex: 1,
-  paddingHorizontal: 28,
-  justifyContent: 'center', // 🔥 MAIN FIX
-},
-
-  // 🔥 TOP SECTION (AI Task Planner + Icon)
+    flex: 1,
+    paddingHorizontal: 28,
+    justifyContent: 'center',
+  },
   logoRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'flex-start',
-  marginBottom: 40, // reduce from 80
-},
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 40,
+  },
   logoText: {
     fontSize: 38,
     fontWeight: '900',
@@ -77,7 +74,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 2, height: 4 },
     textShadowRadius: 4,
   },
-
   clipboardBox: {
     width: 90,
     height: 100,
@@ -87,7 +83,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 10,
   },
-
   clipboardTop: {
     position: 'absolute',
     top: -10,
@@ -97,7 +92,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
   },
-
   paper: {
     width: 48,
     height: 55,
@@ -108,61 +102,50 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingHorizontal: 8,
   },
-
   line: {
     height: 2,
     backgroundColor: '#AAA',
     marginBottom: 10,
   },
-
   lineShort: {
     height: 2,
     width: '70%',
     backgroundColor: '#AAA',
   },
-
-  // 🔥 WELCOME TEXT CENTER
   welcome: {
-  textAlign: 'center',
-  fontSize: 34,
-  fontWeight: '900',
-  color: '#D300FF',
-  marginBottom: 25, // 🔥 reduce gap
-},
-
-  // 🔥 MESSAGE SECTION
+    textAlign: 'center',
+    fontSize: 34,
+    fontWeight: '900',
+    color: '#D300FF',
+    marginBottom: 25,
+  },
   messageRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginBottom: 40, // 🔥 reduce
-},
-
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 40,
+  },
   message: {
     fontSize: 16,
     color: '#444',
     lineHeight: 26,
-    textAlign: 'center', // 🔥 center like figma
+    textAlign: 'center',
     width: '75%',
   },
-
   heart: {
     width: 40,
     height: 35,
     marginLeft: -65,
     marginTop: -40,
   },
-
-  // 🔥 BUTTON
   button: {
-  height: 58,
-  borderRadius: 30,
-  backgroundColor: '#F7CCFF',
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginHorizontal: 20,
-},
-
+    height: 58,
+    borderRadius: 30,
+    backgroundColor: '#F7CCFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 20,
+  },
   buttonText: {
     fontSize: 18,
     fontWeight: '700',

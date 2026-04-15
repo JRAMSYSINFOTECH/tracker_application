@@ -1,5 +1,4 @@
 import { StyleSheet, View } from 'react-native';
-import { colors } from '../theme/colors';
 
 export default function TopCurve() {
   return <View style={styles.topShape} />;
@@ -11,9 +10,8 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     width: 240,
-    height: 230,
-    backgroundColor: colors.topShape,
-    borderBottomRightRadius: 150,
-    opacity: 0.8,
+    height: 220,
+    backgroundColor: '#f4c6f7',
+    borderBottomRightRadius: 120,
   },
 });
