@@ -1,5 +1,4 @@
-// app/login.tsx
-
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
@@ -23,15 +22,21 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = () => {
-    if (!email || !password) {
+    if (!email.trim() || !password.trim()) {
       setError('Please fill all fields');
       return;
     }
 
+    if (password.trim().length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
     setError('');
-    alert('Login Success (Demo)');
+    router.replace('/(tabs)');
   };
 
   return (
@@ -39,15 +44,13 @@ export default function LoginScreen() {
       <TopCurve />
 
       <View style={styles.content}>
-        {/* Back Button */}
+        {/* Back Button - optional, first screen aithe remove cheyyachu */}
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <Text style={styles.backText}>‹</Text>
         </TouchableOpacity>
 
-        {/* Title */}
         <Text style={styles.title}>Login</Text>
 
-        {/* Signup */}
         <View style={styles.accountRow}>
           <Text style={styles.accountText}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => router.push('/signup')}>
@@ -55,22 +58,40 @@ export default function LoginScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Inputs */}
         <View style={styles.form}>
           <AppInput
             placeholder="Email / Phone number"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text: string) => {
+              setEmail(text);
+              if (error) setError('');
+            }}
             style={{ marginBottom: 20 }}
           />
 
-          <AppInput
-            placeholder="Password"
-            secureTextEntry
-            value={password}
-            onChangeText={setPassword}
-            style={{ marginBottom: 10 }}
-          />
+          <View style={styles.passwordWrapper}>
+            <AppInput
+              placeholder="Password"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={(text: string) => {
+                setPassword(text);
+                if (error) setError('');
+              }}
+              style={styles.passwordInput}
+            />
+
+            <TouchableOpacity
+              style={styles.eyeButton}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Ionicons
+                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                size={22}
+                color="#666"
+              />
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity>
             <Text style={styles.forgot}>Forgot Password ?</Text>
@@ -103,7 +124,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 28,
-    paddingTop: 100, // 🔥 main alignment control
+    paddingTop: 100,
   },
 
   backButton: {
@@ -120,6 +141,7 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 22,
     color: '#111',
+    lineHeight: 24,
   },
 
   title: {
@@ -145,8 +167,25 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  form: {
-    // 🔥 keeps everything grouped nicely
+  form: {},
+
+  passwordWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+
+  passwordInput: {
+    paddingRight: 50,
+    marginBottom: 0,
+  },
+
+  eyeButton: {
+    position: 'absolute',
+    right: 16,
+    top: '50%',
+    transform: [{ translateY: -11 }],
+    zIndex: 10,
   },
 
   forgot: {
@@ -171,6 +210,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     marginRight: 10,
+    resizeMode: 'contain',
   },
 
   googleText: {
