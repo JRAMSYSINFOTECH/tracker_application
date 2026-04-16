@@ -20,6 +20,7 @@ model User {
   phone          String?      @unique
   profile_pic    String?      // store image URL/path
   created_at     DateTime @default(now())
+   googleId  String? @unique
   tasks          Task[]
   daily_plans    DailyPlan[]
 }
