@@ -1,16 +1,29 @@
-import { TextInput, TextInputProps } from 'react-native';
-import { commonStyles } from '../theme/commonStyles';
+import { StyleSheet, TextInput, View } from 'react-native';
 
-type Props = TextInputProps & {
-  style?: any;
-};
-
-export default function AppInput({ style, ...props }: Props) {
+export default function AppInput({ style, ...props }: any) {
   return (
-    <TextInput
-      {...props}
-      style={[commonStyles.pillInput, style]}
-      placeholderTextColor="#666"
-    />
+    <View style={[styles.container, style]}>
+      <TextInput
+        {...props}
+        style={styles.input}
+        placeholderTextColor="#777"
+      />
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    height: 55,
+    borderWidth: 2,
+    borderColor: '#111',
+    borderRadius: 30,
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    backgroundColor: '#fff',
+  },
+  input: {
+    fontSize: 16,
+    color: '#111',
+  },
+});
