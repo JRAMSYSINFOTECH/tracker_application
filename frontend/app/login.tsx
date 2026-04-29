@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   StyleSheet,
   Text,
@@ -13,30 +14,67 @@ import AppButton from '../constants/src/components/AppButton';
 import AppInput from '../constants/src/components/AppInput';
 import OrDivider from '../constants/src/components/OrDivider';
 import TopCurve from '../constants/src/components/TopCurve';
+import { useAuth } from '../constants/src/context/AuthContext';
 import { colors } from '../constants/src/theme/colors';
 import { commonStyles } from '../constants/src/theme/commonStyles';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { login, isAuthenticated, loading } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleLogin = () => {
-    if (!email.trim() || !password.trim()) {
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Redirect href="/(tabs)/home" />;
+  }
+
+  const handleLogin = async () => {
+    if (submitting) return;
+
+    setError('');
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPassword = password.trim();
+
+    if (!normalizedEmail || !normalizedPassword) {
       setError('Please fill all fields');
       return;
     }
 
-    if (password.trim().length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
+    try {
+      setSubmitting(true);
 
-    setError('');
-    router.replace('/(tabs)');
+      const result = await login(normalizedEmail, normalizedPassword);
+
+      if (!result.success) {
+        setError(result.message || 'Login failed');
+        return;
+      }
+
+      setEmail('');
+      setPassword('');
+      router.replace('/(tabs)/home');
+    } catch (e) {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleBack = () => {
+    router.replace('/');
   };
 
   return (
@@ -44,8 +82,11 @@ export default function LoginScreen() {
       <TopCurve />
 
       <View style={styles.content}>
-        {/* Back Button - optional, first screen aithe remove cheyyachu */}
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleBack}
+          disabled={submitting}
+        >
           <Text style={styles.backText}>‹</Text>
         </TouchableOpacity>
 
@@ -53,20 +94,26 @@ export default function LoginScreen() {
 
         <View style={styles.accountRow}>
           <Text style={styles.accountText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => router.push('/signup')}>
-            <Text style={styles.link}>SignUp</Text>
+          <TouchableOpacity
+            onPress={() => router.replace('/signup')}
+            disabled={submitting}
+          >
+            <Text style={styles.link}>Sign Up</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.form}>
           <AppInput
-            placeholder="Email / Phone number"
+            placeholder="Email"
             value={email}
             onChangeText={(text: string) => {
               setEmail(text);
               if (error) setError('');
             }}
+            editable={!submitting}
             style={{ marginBottom: 20 }}
+            keyboardType="email-address"
+            autoCapitalize="none"
           />
 
           <View style={styles.passwordWrapper}>
@@ -78,12 +125,14 @@ export default function LoginScreen() {
                 setPassword(text);
                 if (error) setError('');
               }}
+              editable={!submitting}
               style={styles.passwordInput}
             />
 
             <TouchableOpacity
               style={styles.eyeButton}
               onPress={() => setShowPassword(!showPassword)}
+              disabled={submitting}
             >
               <Ionicons
                 name={showPassword ? 'eye-off-outline' : 'eye-outline'}
@@ -93,21 +142,26 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity>
+          <TouchableOpacity disabled={submitting}>
             <Text style={styles.forgot}>Forgot Password ?</Text>
           </TouchableOpacity>
 
           {error ? <Text style={commonStyles.errorText}>{error}</Text> : null}
 
           <AppButton
-            title="Login"
+            title={submitting ? 'Logging in...' : 'Login'}
             onPress={handleLogin}
-            style={{ marginTop: 20, marginBottom: 25 }}
+            style={{
+              marginTop: 20,
+              marginBottom: 25,
+              opacity: submitting ? 0.7 : 1,
+            }}
+            disabled={submitting}
           />
 
           <OrDivider />
 
-          <TouchableOpacity style={styles.googleButton}>
+          <TouchableOpacity style={styles.googleButton} disabled={submitting}>
             <Image
               source={require('../assets/images/google-logo.png')}
               style={styles.googleLogo}
@@ -121,12 +175,17 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  loaderContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
   content: {
     flex: 1,
     paddingHorizontal: 28,
     paddingTop: 100,
   },
-
   backButton: {
     width: 32,
     height: 32,
@@ -137,49 +196,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
-
   backText: {
     fontSize: 22,
     color: '#111',
     lineHeight: 24,
   },
-
   title: {
     fontSize: 30,
     fontWeight: '800',
     color: '#111',
     marginBottom: 6,
   },
-
   accountRow: {
     flexDirection: 'row',
     marginBottom: 30,
   },
-
   accountText: {
     color: colors.textPrimary,
     fontSize: 15,
   },
-
   link: {
     color: colors.accent,
     fontSize: 15,
     fontWeight: '500',
   },
-
   form: {},
-
   passwordWrapper: {
     position: 'relative',
     justifyContent: 'center',
     marginBottom: 10,
   },
-
   passwordInput: {
     paddingRight: 50,
     marginBottom: 0,
   },
-
   eyeButton: {
     position: 'absolute',
     right: 16,
@@ -187,14 +237,12 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -11 }],
     zIndex: 10,
   },
-
   forgot: {
     color: colors.accent,
     marginBottom: 10,
     marginLeft: 5,
     fontSize: 15,
   },
-
   googleButton: {
     marginTop: 25,
     height: 55,
@@ -205,14 +253,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   googleLogo: {
     width: 22,
     height: 22,
     marginRight: 10,
     resizeMode: 'contain',
   },
-
   googleText: {
     fontSize: 16,
     color: '#111',

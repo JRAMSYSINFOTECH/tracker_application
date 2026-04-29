@@ -2,14 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
-    Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 type FilterType = 'All' | 'ToDo' | 'InProgress' | 'Completed';
@@ -27,6 +27,7 @@ export default function MyTasksScreen() {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('All');
   const [searchText, setSearchText] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [openMenuTaskId, setOpenMenuTaskId] = useState<number | null>(null);
 
   const [tasks, setTasks] = useState<TaskType[]>([
     {
@@ -46,14 +47,14 @@ export default function MyTasksScreen() {
     {
       id: 3,
       title: 'Project Work',
-      note: 'Continue Kubernetes project explanation.',
+      note: 'Continue Kubernetes + Jenkins explanation.',
       time: '02:00 PM',
       status: 'ToDo',
     },
     {
       id: 4,
       title: 'Mock Test',
-      note: 'Complete one aptitude mock test.',
+      note: 'Take one aptitude or coding mock test.',
       time: '06:00 PM',
       status: 'Completed',
     },
@@ -112,7 +113,14 @@ export default function MyTasksScreen() {
   };
 
   const handleDeleteTask = (id: number) => {
-    setTasks((prev) => prev.filter((item) => item.id !== id));
+    Alert.alert('Delete task', 'Are you sure you want to delete this task?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => setTasks((prev) => prev.filter((item) => item.id !== id)),
+      },
+    ]);
   };
 
   const openEditModal = (task: TaskType) => {
@@ -122,6 +130,7 @@ export default function MyTasksScreen() {
     setEditTime(task.time);
     setEditStatus(task.status);
     setEditModalVisible(true);
+    setOpenMenuTaskId(null);
   };
 
   const handleSaveEdit = () => {
@@ -161,11 +170,51 @@ export default function MyTasksScreen() {
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <Text style={[styles.filterText, active && styles.activeFilterText]}>
-        {label}
-      </Text>
+      <Text style={[styles.filterText, active && styles.activeFilterText]}>{label}</Text>
     </TouchableOpacity>
   );
+
+  const TaskMenu = ({ taskId }: { taskId: number }) => {
+    const open = openMenuTaskId === taskId;
+
+    return (
+      <View style={styles.menuWrap}>
+        <TouchableOpacity
+          style={styles.moreBtn}
+          onPress={() => setOpenMenuTaskId(open ? null : taskId)}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="ellipsis-horizontal" size={18} color="#111" />
+        </TouchableOpacity>
+
+        {open && (
+          <View style={styles.menuPopup}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                const task = tasks.find((t) => t.id === taskId);
+                if (task) openEditModal(task);
+              }}
+            >
+              <Ionicons name="create-outline" size={16} color="#111" />
+              <Text style={styles.menuItemText}>Edit</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setOpenMenuTaskId(null);
+                handleDeleteTask(taskId);
+              }}
+            >
+              <Ionicons name="trash-outline" size={16} color="#B91C1C" />
+              <Text style={[styles.menuItemText, styles.deleteMenuText]}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -174,43 +223,55 @@ export default function MyTasksScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        onScrollBeginDrag={() => setOpenMenuTaskId(null)}
       >
         <View style={styles.topRow}>
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={24} color="#111" />
+            <Ionicons name="arrow-back" size={22} color="#111" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.addIconBtn} onPress={() => router.push('/add-task')}>
-            <Ionicons name="add" size={22} color="#111" />
+          <TouchableOpacity
+            style={styles.addIconBtn}
+            onPress={() => router.push('/add-task' as any)}
+          >
+            <Ionicons name="add" size={22} color="#E91E63" />
           </TouchableOpacity>
         </View>
 
         <Text style={styles.title}>My Tasks</Text>
         <Text style={styles.subtitle}>Track, edit and manage your daily tasks.</Text>
 
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryBox}>
-            <Text style={styles.summaryNumber}>{tasks.length}</Text>
-            <Text style={styles.summaryLabel}>Total Tasks</Text>
+        <View style={styles.summaryRow}>
+          <View style={[styles.summaryCard, styles.totalCard]}>
+            <View style={[styles.summaryIconBox, styles.totalIconBox]}>
+              <Ionicons name="clipboard-outline" size={24} color="#E91E63" />
+            </View>
+            <View>
+              <Text style={styles.summaryNumber}>{tasks.length}</Text>
+              <Text style={styles.summaryLabel}>Total Tasks</Text>
+            </View>
           </View>
 
-          <View style={styles.summaryDivider} />
-
-          <View style={styles.summaryBox}>
-            <Text style={styles.summaryNumber}>
-              {tasks.filter((item) => item.status === 'Completed').length}
-            </Text>
-            <Text style={styles.summaryLabel}>Completed</Text>
+          <View style={[styles.summaryCard, styles.completedCard]}>
+            <View style={[styles.summaryIconBox, styles.completedIconBox]}>
+              <Ionicons name="checkmark-circle-outline" size={24} color="#1F8A2F" />
+            </View>
+            <View>
+              <Text style={styles.summaryNumber}>
+                {tasks.filter((item) => item.status === 'Completed').length}
+              </Text>
+              <Text style={styles.summaryLabel}>Completed</Text>
+            </View>
           </View>
         </View>
 
         <View style={styles.searchRow}>
           <View style={styles.searchBox}>
-            <Ionicons name="search-outline" size={18} color="#666" />
+            <Ionicons name="search" size={20} color="#9A9A9A" />
             <TextInput
               style={styles.searchInput}
               placeholder="Search tasks"
-              placeholderTextColor="#777"
+              placeholderTextColor="#9A9A9A"
               value={searchText}
               onChangeText={setSearchText}
             />
@@ -220,62 +281,73 @@ export default function MyTasksScreen() {
             style={styles.filterIconBtn}
             onPress={() => setShowFilters(!showFilters)}
           >
-            <Ionicons name="options-outline" size={20} color="#111" />
+            <Ionicons name="options-outline" size={22} color="#E91E63" />
           </TouchableOpacity>
         </View>
 
         {showFilters && (
-          <>
-            <Text style={styles.sectionTitle}>Task Status</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterRow}
-            >
-              {filters.map((item) => (
-                <FilterChip
-                  key={item}
-                  label={item}
-                  active={selectedFilter === item}
-                  onPress={() => setSelectedFilter(item)}
-                />
-              ))}
-            </ScrollView>
-          </>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterRow}
+          >
+            {filters.map((item) => (
+              <FilterChip
+                key={item}
+                label={item}
+                active={selectedFilter === item}
+                onPress={() => setSelectedFilter(item)}
+              />
+            ))}
+          </ScrollView>
         )}
 
         <Text style={styles.sectionTitle}>Task List</Text>
 
         {filteredTasks.map((item) => (
           <View key={item.id} style={styles.taskCard}>
-            <View style={styles.cardTopRow}>
-              <View style={styles.timePill}>
-                <Text style={styles.timeText}>{item.time}</Text>
+            <View style={styles.taskCardTop}>
+              <View style={styles.taskLeftColumn}>
+                <View style={styles.timeWrap}>
+                  <Text style={styles.timeText}>{item.time.split(' ')[0]}</Text>
+                  <Text style={styles.timeText}>{item.time.split(' ')[1]}</Text>
+                </View>
               </View>
 
-              <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
-                <Text style={[styles.statusBadgeText, getStatusTextStyle(item.status)]}>
-                  {item.status}
-                </Text>
+              <View style={styles.taskMainColumn}>
+                <View style={styles.statusRow}>
+                  <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
+                    <Text style={[styles.statusBadgeText, getStatusTextStyle(item.status)]}>
+                      {item.status === 'ToDo'
+                        ? 'To Do'
+                        : item.status === 'InProgress'
+                          ? 'In Progress'
+                          : 'Completed'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.priorityWrap}>
+                    <Text style={styles.priorityText}>
+                      {item.status === 'InProgress' ? 'Medium' : item.status === 'Completed' ? 'Low' : 'High'}
+                    </Text>
+                    <View
+                      style={[
+                        styles.priorityDot,
+                        item.status === 'InProgress'
+                          ? styles.mediumDot
+                          : item.status === 'Completed'
+                            ? styles.lowDot
+                            : styles.highDot,
+                      ]}
+                    />
+                  </View>
+
+                  <TaskMenu taskId={item.id} />
+                </View>
+
+                <Text style={styles.taskTitle}>{item.title}</Text>
+                <Text style={styles.taskNote}>{item.note}</Text>
               </View>
-            </View>
-
-            <Text style={styles.taskTitle}>{item.title}</Text>
-            <Text style={styles.taskNote}>{item.note}</Text>
-
-            <View style={styles.cardActions}>
-              <TouchableOpacity style={styles.editBtn} onPress={() => openEditModal(item)}>
-                <Ionicons name="create-outline" size={16} color="#111" />
-                <Text style={styles.editBtnText}>Edit</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.deleteBtn}
-                onPress={() => handleDeleteTask(item.id)}
-              >
-                <Ionicons name="trash-outline" size={16} color="#B91C1C" />
-                <Text style={styles.deleteBtnText}>Delete</Text>
-              </TouchableOpacity>
             </View>
           </View>
         ))}
@@ -326,20 +398,14 @@ export default function MyTasksScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.filterRow}
             >
-              {['ToDo', 'InProgress', 'Completed'].map((item) => (
+              {(['ToDo', 'InProgress', 'Completed'] as FilterType[]).map((item) => (
                 <TouchableOpacity
                   key={item}
-                  style={[
-                    styles.filterChip,
-                    editStatus === item && styles.activeFilterChip,
-                  ]}
-                  onPress={() => setEditStatus(item as FilterType)}
+                  style={[styles.filterChip, editStatus === item && styles.activeFilterChip]}
+                  onPress={() => setEditStatus(item)}
                 >
                   <Text
-                    style={[
-                      styles.filterText,
-                      editStatus === item && styles.activeFilterText,
-                    ]}
+                    style={[styles.filterText, editStatus === item && styles.activeFilterText]}
                   >
                     {item}
                   </Text>
@@ -371,7 +437,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-
   topShape: {
     position: 'absolute',
     top: -35,
@@ -383,38 +448,33 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 105,
     zIndex: 0,
   },
-
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 56,
     paddingBottom: 40,
   },
-
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
   },
-
   backBtn: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#fff',
+    backgroundColor: '#FBEAF7',
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   addIconBtn: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#fff',
+    backgroundColor: '#FBEAF7',
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   title: {
     fontSize: 28,
     fontWeight: '800',
@@ -423,241 +483,261 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     marginTop: 4,
   },
-
   subtitle: {
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
     marginBottom: 20,
   },
-
-  summaryCard: {
+  summaryRow: {
     flexDirection: 'row',
-    backgroundColor: '#F9EEFC',
-    borderRadius: 26,
-    paddingVertical: 18,
-    paddingHorizontal: 10,
+    gap: 12,
     marginBottom: 18,
-    alignItems: 'center',
   },
-
-  summaryBox: {
+  summaryCard: {
     flex: 1,
+    borderRadius: 24,
+    paddingVertical: 18,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  totalCard: {
+    backgroundColor: '#FDF0F7',
+  },
+  completedCard: {
+    backgroundColor: '#F2FAF0',
+  },
+  summaryIconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-
-  summaryDivider: {
-    width: 1,
-    height: 36,
-    backgroundColor: '#D9B8E5',
+  totalIconBox: {
+    backgroundColor: '#FBE1EF',
   },
-
+  completedIconBox: {
+    backgroundColor: '#E4F7E6',
+  },
   summaryNumber: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '800',
     color: '#111',
-    marginBottom: 4,
+    marginBottom: 2,
   },
-
   summaryLabel: {
     fontSize: 13,
     color: '#666',
+    fontWeight: '500',
   },
-
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 18,
   },
-
   searchBox: {
     flex: 1,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#F8F1FB',
+    height: 54,
+    borderRadius: 18,
+    backgroundColor: '#fff',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: '#EAD7F0',
+    borderColor: '#ECECEC',
   },
-
   searchInput: {
     flex: 1,
-    marginLeft: 8,
+    marginLeft: 10,
     color: '#111',
+    fontSize: 16,
   },
-
   filterIconBtn: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#F4CCFF',
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    backgroundColor: '#FBEAF7',
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  sectionTitle: {
-    fontSize: 17,
-    color: '#111',
-    marginBottom: 12,
-    fontWeight: '700',
-  },
-
   filterRow: {
-    gap: 10,
+    gap: 12,
     paddingBottom: 14,
   },
-
   filterChip: {
-    paddingHorizontal: 16,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: 1,
-    borderColor: '#111',
+    paddingHorizontal: 18,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#F4F4F6',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
-
   activeFilterChip: {
-    backgroundColor: '#F4CCFF',
-    borderColor: '#111',
+    backgroundColor: '#E91E63',
   },
-
   filterText: {
     fontSize: 14,
-    color: '#111',
-    fontWeight: '500',
+    color: '#222',
+    fontWeight: '600',
   },
-
   activeFilterText: {
-    fontWeight: '700',
+    color: '#fff',
   },
-
+  sectionTitle: {
+    fontSize: 18,
+    color: '#111',
+    marginBottom: 14,
+    fontWeight: '800',
+  },
   taskCard: {
     backgroundColor: '#fff',
     borderRadius: 24,
-    padding: 16,
+    padding: 18,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#E9D9EE',
+    borderColor: '#EFEFEF',
     shadowColor: '#000',
     shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
-
-  cardTopRow: {
+  taskCardTop: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    alignItems: 'flex-start',
   },
-
-  timePill: {
-    backgroundColor: '#F4CCFF',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
+  taskLeftColumn: {
+    width: 74,
+    marginRight: 14,
   },
-
+  timeWrap: {
+    alignItems: 'flex-start',
+  },
   timeText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#111',
+    fontSize: 18,
+    lineHeight: 24,
+    fontWeight: '800',
+    color: '#E91E63',
   },
-
+  taskMainColumn: {
+    flex: 1,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
   statusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 18,
   },
-
   statusBadgeText: {
     fontSize: 12,
     fontWeight: '700',
   },
-
   todoBadge: {
     backgroundColor: '#FCE7F3',
   },
-
   todoText: {
     color: '#C0266D',
   },
-
   progressBadge: {
     backgroundColor: '#FEF3C7',
   },
-
   progressText: {
     color: '#B45309',
   },
-
   completedBadge: {
     backgroundColor: '#DCFCE7',
   },
-
   completedText: {
     color: '#15803D',
   },
-
+  priorityWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  priorityText: {
+    fontSize: 14,
+    color: '#222',
+    fontWeight: '500',
+  },
+  priorityDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BDBDBD',
+  },
+  highDot: {
+    backgroundColor: '#E91E63',
+  },
+  mediumDot: {
+    backgroundColor: '#F59E0B',
+  },
+  lowDot: {
+    backgroundColor: '#22C55E',
+  },
   taskTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: '#111',
     marginBottom: 6,
   },
-
   taskNote: {
     fontSize: 14,
     color: '#555',
     lineHeight: 20,
-    marginBottom: 14,
   },
-
-  cardActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  menuWrap: {
+    position: 'relative',
+    marginLeft: 8,
   },
-
-  editBtn: {
-    width: '48%',
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#F4CCFF',
+  moreBtn: {
+    width: 28,
+    height: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
   },
-
-  editBtnText: {
+  menuPopup: {
+    position: 'absolute',
+    top: 32,
+    right: 0,
+    width: 120,
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#EDEDED',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+    paddingVertical: 6,
+    zIndex: 20,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  menuItemText: {
+    fontSize: 14,
     color: '#111',
-    fontSize: 15,
     fontWeight: '600',
   },
-
-  deleteBtn: {
-    width: '48%',
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#FDECEC',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-  },
-
-  deleteBtnText: {
+  deleteMenuText: {
     color: '#B91C1C',
-    fontSize: 15,
-    fontWeight: '600',
   },
-
   emptyCard: {
     backgroundColor: '#FAFAFA',
     borderRadius: 20,
@@ -666,26 +746,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ECECEC',
   },
-
   emptyTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#111',
     marginBottom: 4,
   },
-
   emptyText: {
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
   },
-
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.25)',
     justifyContent: 'flex-end',
   },
-
   modalCard: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 28,
@@ -693,7 +769,6 @@ const styles = StyleSheet.create({
     padding: 22,
     paddingBottom: 34,
   },
-
   modalTitle: {
     fontSize: 22,
     fontWeight: '800',
@@ -701,7 +776,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     textAlign: 'center',
   },
-
   modalInput: {
     height: 48,
     backgroundColor: '#F8F1FB',
@@ -710,18 +784,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     color: '#111',
   },
-
   modalNoteInput: {
     height: 90,
     paddingTop: 14,
   },
-
   modalBtnRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 14,
   },
-
   modalCancelBtn: {
     width: '48%',
     height: 46,
@@ -731,13 +802,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   modalCancelText: {
     color: '#111',
     fontSize: 15,
     fontWeight: '600',
   },
-
   modalSaveBtn: {
     width: '48%',
     height: 46,
@@ -746,7 +815,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   modalSaveText: {
     color: '#111',
     fontSize: 15,

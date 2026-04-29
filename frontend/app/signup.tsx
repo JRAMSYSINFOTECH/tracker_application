@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   StyleSheet,
   Text,
@@ -13,11 +14,13 @@ import AppButton from '../constants/src/components/AppButton';
 import AppInput from '../constants/src/components/AppInput';
 import OrDivider from '../constants/src/components/OrDivider';
 import TopCurve from '../constants/src/components/TopCurve';
+import { useAuth } from '../constants/src/context/AuthContext';
 import { colors } from '../constants/src/theme/colors';
 import { commonStyles } from '../constants/src/theme/commonStyles';
 
 export default function SignupScreen() {
   const router = useRouter();
+  const { signup, isAuthenticated, loading } = useAuth();
 
   const [gender, setGender] = useState<'F' | 'M' | 'O'>('M');
   const [name, setName] = useState('');
@@ -25,37 +28,101 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator size="large" color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (isAuthenticated) {
+    return <Redirect href="/(tabs)/home" />;
+  }
 
   const isValidEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
 
   const isStrongPassword = (value: string) =>
     /^(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{8,}$/.test(value);
 
-  const handleSignup = () => {
-    if (!name.trim() || !email.trim() || !password.trim() || !confirm.trim()) {
+  const resetForm = () => {
+    setName('');
+    setEmail('');
+    setPassword('');
+    setConfirm('');
+    setGender('M');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+  };
+
+  const handleSignup = async () => {
+    if (submitting) return;
+
+    setError('');
+    setSuccess('');
+
+    const normalizedName = name.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPassword = password.trim();
+    const normalizedConfirm = confirm.trim();
+
+    if (
+      !normalizedName ||
+      !normalizedEmail ||
+      !normalizedPassword ||
+      !normalizedConfirm
+    ) {
       setError('All fields are required');
       return;
     }
 
-    if (!isValidEmail(email)) {
-      setError('Enter valid email');
+    if (!isValidEmail(normalizedEmail)) {
+      setError('Enter a valid email');
       return;
     }
 
-    if (!isStrongPassword(password)) {
+    if (!isStrongPassword(normalizedPassword)) {
       setError('Password must be 8+ chars with number & special symbol');
       return;
     }
 
-    if (password !== confirm) {
+    if (normalizedPassword !== normalizedConfirm) {
       setError('Passwords do not match');
       return;
     }
 
-    setError('');
-    router.replace('/(tabs)');
+    try {
+      setSubmitting(true);
+
+      const result = await signup(
+        normalizedName,
+        normalizedEmail,
+        normalizedPassword,
+        gender
+      );
+
+      if (!result.success) {
+        setError(result.message || 'Signup failed');
+        return;
+      }
+
+      setSuccess(result.message || 'Signup successful');
+      resetForm();
+      router.replace('/(tabs)/home');
+    } catch (e) {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleBack = () => {
+    router.replace('/');
   };
 
   return (
@@ -63,7 +130,11 @@ export default function SignupScreen() {
       <TopCurve />
 
       <View style={styles.content}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={handleBack}
+          disabled={submitting}
+        >
           <Text style={styles.backText}>‹</Text>
         </TouchableOpacity>
 
@@ -71,7 +142,10 @@ export default function SignupScreen() {
 
         <View style={styles.loginRow}>
           <Text style={styles.loginText}>Already have an account? </Text>
-          <TouchableOpacity onPress={() => router.push('/login')}>
+          <TouchableOpacity
+            onPress={() => router.replace('/login')}
+            disabled={submitting}
+          >
             <Text style={styles.link}>Login</Text>
           </TouchableOpacity>
         </View>
@@ -89,6 +163,7 @@ export default function SignupScreen() {
                 styles.genderCircle,
                 gender === g && styles.activeGender,
               ]}
+              disabled={submitting}
             >
               <Text
                 style={[
@@ -110,18 +185,24 @@ export default function SignupScreen() {
           onChangeText={(text: string) => {
             setName(text);
             if (error) setError('');
+            if (success) setSuccess('');
           }}
+          editable={!submitting}
           style={{ marginBottom: 15 }}
         />
 
         <AppInput
-          placeholder="Email / Phone number"
+          placeholder="Email"
           value={email}
           onChangeText={(text: string) => {
             setEmail(text);
             if (error) setError('');
+            if (success) setSuccess('');
           }}
+          editable={!submitting}
           style={{ marginBottom: 15 }}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
 
         <View style={styles.passwordWrapper}>
@@ -132,13 +213,16 @@ export default function SignupScreen() {
             onChangeText={(text: string) => {
               setPassword(text);
               if (error) setError('');
+              if (success) setSuccess('');
             }}
+            editable={!submitting}
             style={styles.passwordInput}
           />
 
           <TouchableOpacity
             style={styles.eyeButton}
             onPress={() => setShowPassword(!showPassword)}
+            disabled={submitting}
           >
             <Ionicons
               name={showPassword ? 'eye-off-outline' : 'eye-outline'}
@@ -156,13 +240,16 @@ export default function SignupScreen() {
             onChangeText={(text: string) => {
               setConfirm(text);
               if (error) setError('');
+              if (success) setSuccess('');
             }}
+            editable={!submitting}
             style={styles.passwordInput}
           />
 
           <TouchableOpacity
             style={styles.eyeButton}
             onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            disabled={submitting}
           >
             <Ionicons
               name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
@@ -178,15 +265,22 @@ export default function SignupScreen() {
           </Text>
         ) : null}
 
+        {success ? <Text style={styles.successText}>{success}</Text> : null}
+
         <AppButton
-          title="Sign Up"
+          title={submitting ? 'Signing Up...' : 'Sign Up'}
           onPress={handleSignup}
-          style={{ marginTop: 15, marginBottom: 25 }}
+          style={{
+            marginTop: 15,
+            marginBottom: 25,
+            opacity: submitting ? 0.7 : 1,
+          }}
+          disabled={submitting}
         />
 
         <OrDivider />
 
-        <TouchableOpacity style={styles.googleButton}>
+        <TouchableOpacity style={styles.googleButton} disabled={submitting}>
           <Image
             source={require('../assets/images/google-logo.png')}
             style={styles.googleLogo}
@@ -199,12 +293,17 @@ export default function SignupScreen() {
 }
 
 const styles = StyleSheet.create({
+  loaderContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
   content: {
     flex: 1,
     paddingHorizontal: 28,
     paddingTop: 90,
   },
-
   backButton: {
     width: 32,
     height: 32,
@@ -215,36 +314,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 18,
   },
-
   backText: {
     fontSize: 22,
     color: '#111',
     lineHeight: 24,
   },
-
   title: {
     fontSize: 30,
     fontWeight: '800',
     color: '#111',
     marginBottom: 6,
   },
-
   loginRow: {
     flexDirection: 'row',
     marginBottom: 18,
   },
-
   loginText: {
     color: colors.textPrimary,
     fontSize: 15,
   },
-
   link: {
     color: colors.accent,
     fontSize: 15,
     fontWeight: '500',
   },
-
   avatar: {
     width: 88,
     height: 88,
@@ -255,14 +348,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 18,
   },
-
   genderRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 16,
     marginBottom: 10,
   },
-
   genderCircle: {
     width: 46,
     height: 46,
@@ -271,41 +362,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   activeGender: {
     borderWidth: 2,
     borderColor: colors.accent,
     backgroundColor: '#f7d7ff',
   },
-
   genderText: {
     color: '#000',
     fontSize: 16,
     fontWeight: '600',
   },
-
   activeGenderText: {
     color: colors.accent,
   },
-
   genderLabel: {
     textAlign: 'center',
     marginBottom: 18,
     color: '#333',
     fontSize: 14,
   },
-
   passwordWrapper: {
     position: 'relative',
     justifyContent: 'center',
     marginBottom: 15,
   },
-
   passwordInput: {
     paddingRight: 50,
     marginBottom: 0,
   },
-
   eyeButton: {
     position: 'absolute',
     right: 16,
@@ -313,7 +397,6 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -11 }],
     zIndex: 10,
   },
-
   googleButton: {
     marginTop: 25,
     height: 55,
@@ -324,16 +407,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
   },
-
   googleLogo: {
     width: 22,
     height: 22,
     marginRight: 10,
     resizeMode: 'contain',
   },
-
   googleText: {
     fontSize: 16,
     color: '#111',
+  },
+  successText: {
+    color: 'green',
+    fontSize: 14,
+    marginBottom: 10,
   },
 });
