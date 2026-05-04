@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,51 +11,132 @@ import {
   View,
 } from 'react-native';
 
-type FilterType = 'All' | 'ToDo' | 'InProgress' | 'Completed';
+import {
+  dashboardApi,
+  getApiErrorMessage,
+  TaskStatus,
+  TodayPlanItem,
+} from '../services/api';
+
+type FilterType = 'All' | 'ToDo' | 'InProgress' | 'Completed' | 'Missed';
+type DisplayStatus = Exclude<FilterType, 'All'>;
+
+type PlanType = {
+  id: number;
+  taskId: number;
+  order: number;
+  time: string;
+  title: string;
+  note: string;
+  icon: string;
+  status: DisplayStatus;
+};
+
+const backendStatusToDisplay: Record<TaskStatus, DisplayStatus> = {
+  pending: 'ToDo',
+  in_progress: 'InProgress',
+  completed: 'Completed',
+  missed: 'Missed',
+};
+
+const formatTodayDate = () =>
+  new Date().toLocaleDateString(undefined, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+
+const formatDeadline = (value: string) => {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'No deadline';
+  }
+
+  return date.toLocaleString(undefined, {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
+const getPlanIcon = (item: TodayPlanItem) => {
+  if (item.task.status === 'completed') {
+    return 'checkmark-circle-outline';
+  }
+
+  switch (item.task.importance_hint) {
+    case 'high':
+      return 'timer-outline';
+    case 'medium':
+      return 'calendar-outline';
+    default:
+      return 'book-outline';
+  }
+};
+
+const mapTodayPlanItem = (item: TodayPlanItem): PlanType => ({
+  id: item.plan_item_id,
+  taskId: item.task_id,
+  order: item.slot_order,
+  time: `Task ${item.slot_order}`,
+  title: item.task.title,
+  note: `Due ${formatDeadline(item.task.deadline)} - Priority ${
+    item.task.importance_hint || 'none'
+  }`,
+  icon: getPlanIcon(item),
+  status: backendStatusToDisplay[item.task.status],
+});
 
 export default function TodayPlanScreen() {
   const router = useRouter();
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('All');
+  const [plans, setPlans] = useState<PlanType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
-  const todayDate = '14 Apr 2026';
+  const todayDate = formatTodayDate();
+  const filters: FilterType[] = ['All', 'ToDo', 'InProgress', 'Completed', 'Missed'];
 
-  const plans = [
-    {
-      time: '07:00 AM',
-      title: 'Morning Revision',
-      note: 'Revise Java concepts and formulas.',
-      icon: 'book-outline',
-      status: 'ToDo',
-    },
-    {
-      time: '10:00 AM',
-      title: 'Coding Practice',
-      note: 'Solve 3 DSA problems from arrays and strings.',
-      icon: 'code-slash-outline',
-      status: 'InProgress',
-    },
-    {
-      time: '02:00 PM',
-      title: 'Project Work',
-      note: 'Continue Kubernetes + Jenkins explanation.',
-      icon: 'laptop-outline',
-      status: 'ToDo',
-    },
-    {
-      time: '06:00 PM',
-      title: 'Mock Test',
-      note: 'Take one aptitude or coding mock test.',
-      icon: 'timer-outline',
-      status: 'Completed',
-    },
-  ];
+  const loadTodayPlan = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError('');
 
-  const filters: FilterType[] = ['All', 'ToDo', 'InProgress', 'Completed'];
+    try {
+      let planItems = await dashboardApi.todayPlan();
+
+      if (planItems.length === 0) {
+        const generated = await dashboardApi.generatePlan();
+
+        if (generated.message !== 'No tasks to plan') {
+          planItems = await dashboardApi.todayPlan();
+        }
+      }
+
+      setPlans(planItems.map(mapTodayPlanItem));
+    } catch (err) {
+      setLoadError(getApiErrorMessage(err, 'Could not load today plan.'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTodayPlan();
+    }, [loadTodayPlan])
+  );
 
   const filteredPlans = useMemo(() => {
     if (selectedFilter === 'All') return plans;
     return plans.filter((item) => item.status === selectedFilter);
-  }, [selectedFilter]);
+  }, [plans, selectedFilter]);
+
+  const focusText =
+    plans.length > 0
+      ? `Start with ${plans[0].title}, then continue in the planned order.`
+      : 'Add a task to build a plan for today.';
 
   const FilterChip = ({
     label,
@@ -83,6 +166,8 @@ export default function TodayPlanScreen() {
         return styles.progressBadge;
       case 'Completed':
         return styles.completedBadge;
+      case 'Missed':
+        return styles.missedBadge;
       default:
         return styles.todoBadge;
     }
@@ -96,6 +181,8 @@ export default function TodayPlanScreen() {
         return styles.progressText;
       case 'Completed':
         return styles.completedText;
+      case 'Missed':
+        return styles.missedText;
       default:
         return styles.todoText;
     }
@@ -121,16 +208,14 @@ export default function TodayPlanScreen() {
             <Ionicons name="calendar-outline" size={20} color="#111" />
           </View>
           <View>
-            <Text style={styles.dateLabel}>Today’s Date</Text>
+            <Text style={styles.dateLabel}>{"Today's Date"}</Text>
             <Text style={styles.dateValue}>{todayDate}</Text>
           </View>
         </View>
 
         <View style={styles.highlightCard}>
           <Text style={styles.highlightTitle}>Focus for Today</Text>
-          <Text style={styles.highlightText}>
-            Complete important tasks first, then continue practice and revision.
-          </Text>
+          <Text style={styles.highlightText}>{focusText}</Text>
         </View>
 
         <Text style={styles.sectionTitle}>Task Status</Text>
@@ -151,38 +236,57 @@ export default function TodayPlanScreen() {
 
         <Text style={styles.sectionTitle}>Your Schedule</Text>
 
-        {filteredPlans.map((item, index) => (
-          <View key={index} style={styles.planCard}>
-            <View style={styles.cardTopRow}>
-              <View style={styles.timePill}>
-                <Text style={styles.timeText}>{item.time}</Text>
-              </View>
-
-              <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
-                <Text style={[styles.statusBadgeText, getStatusTextStyle(item.status)]}>
-                  {item.status}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.planRow}>
-              <View style={styles.iconBox}>
-                <Ionicons name={item.icon as any} size={20} color="#111" />
-              </View>
-
-              <View style={styles.planTextWrap}>
-                <Text style={styles.planTitle}>{item.title}</Text>
-                <Text style={styles.planNote}>{item.note}</Text>
-              </View>
-            </View>
+        {isLoading && (
+          <View style={styles.emptyCard}>
+            <ActivityIndicator color="#111" />
+            <Text style={styles.emptyText}>Loading today plan...</Text>
           </View>
-        ))}
+        )}
 
-        {filteredPlans.length === 0 && (
+        {!isLoading && loadError ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>Could not load today plan</Text>
+            <Text style={styles.emptyText}>{loadError}</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={loadTodayPlan}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {!isLoading &&
+          !loadError &&
+          filteredPlans.map((item) => (
+            <View key={item.id} style={styles.planCard}>
+              <View style={styles.cardTopRow}>
+                <View style={styles.timePill}>
+                  <Text style={styles.timeText}>{item.time}</Text>
+                </View>
+
+                <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
+                  <Text style={[styles.statusBadgeText, getStatusTextStyle(item.status)]}>
+                    {item.status}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.planRow}>
+                <View style={styles.iconBox}>
+                  <Ionicons name={item.icon as any} size={20} color="#111" />
+                </View>
+
+                <View style={styles.planTextWrap}>
+                  <Text style={styles.planTitle}>{item.title}</Text>
+                  <Text style={styles.planNote}>{item.note}</Text>
+                </View>
+              </View>
+            </View>
+          ))}
+
+        {!isLoading && !loadError && filteredPlans.length === 0 && (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>No tasks found</Text>
             <Text style={styles.emptyText}>
-              There are no tasks available in this status right now.
+              There are no planned tasks available in this status right now.
             </Text>
           </View>
         )}
@@ -397,6 +501,14 @@ const styles = StyleSheet.create({
     color: '#15803D',
   },
 
+  missedBadge: {
+    backgroundColor: '#FEE2E2',
+  },
+
+  missedText: {
+    color: '#B91C1C',
+  },
+
   planRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -449,6 +561,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
+  },
+
+  retryBtn: {
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: '#111',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 18,
+  },
+
+  retryText: {
+    color: '#111',
+    fontSize: 14,
+    fontWeight: '600',
   },
 
   primaryBtn: {
