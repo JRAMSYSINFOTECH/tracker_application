@@ -15,6 +15,8 @@ import OrDivider from '../constants/src/components/OrDivider';
 import TopCurve from '../constants/src/components/TopCurve';
 import { colors } from '../constants/src/theme/colors';
 import { commonStyles } from '../constants/src/theme/commonStyles';
+import { authApi, getApiErrorMessage, setAuthToken } from '../services/api';
+import { startGoogleAuth } from '../services/googleAuth';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -25,6 +27,8 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -33,7 +37,7 @@ export default function SignupScreen() {
   const isStrongPassword = (value: string) =>
     /^(?=.*[0-9])(?=.*[!@#$%^&*])[A-Za-z0-9!@#$%^&*]{8,}$/.test(value);
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!name.trim() || !email.trim() || !password.trim() || !confirm.trim()) {
       setError('All fields are required');
       return;
@@ -55,7 +59,35 @@ export default function SignupScreen() {
     }
 
     setError('');
-    router.replace('/(tabs)');
+    setIsSubmitting(true);
+
+    try {
+      const response = await authApi.signup({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        gender,
+      });
+
+      setAuthToken(response.token);
+      router.replace('/(tabs)');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Signup failed. Please try again.'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignup = async () => {
+    setError('');
+    setIsGoogleSubmitting(true);
+
+    try {
+      await startGoogleAuth();
+    } catch {
+      setError('Could not open Google login. Please try again.');
+      setIsGoogleSubmitting(false);
+    }
   };
 
   return (
@@ -115,7 +147,7 @@ export default function SignupScreen() {
         />
 
         <AppInput
-          placeholder="Email / Phone number"
+          placeholder="Email"
           value={email}
           onChangeText={(text: string) => {
             setEmail(text);
@@ -179,19 +211,26 @@ export default function SignupScreen() {
         ) : null}
 
         <AppButton
-          title="Sign Up"
+          title={isSubmitting ? 'Creating account...' : 'Sign Up'}
           onPress={handleSignup}
+          disabled={isSubmitting}
           style={{ marginTop: 15, marginBottom: 25 }}
         />
 
         <OrDivider />
 
-        <TouchableOpacity style={styles.googleButton}>
+        <TouchableOpacity
+          style={[styles.googleButton, isGoogleSubmitting && styles.disabledButton]}
+          onPress={handleGoogleSignup}
+          disabled={isGoogleSubmitting}
+        >
           <Image
             source={require('../assets/images/google-logo.png')}
             style={styles.googleLogo}
           />
-          <Text style={styles.googleText}>Continue with Google</Text>
+          <Text style={styles.googleText}>
+            {isGoogleSubmitting ? 'Opening Google...' : 'Continue with Google'}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -323,6 +362,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
+  },
+
+  disabledButton: {
+    opacity: 0.65,
   },
 
   googleLogo: {

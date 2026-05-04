@@ -1,16 +1,33 @@
-import { Text, TextStyle, TouchableOpacity, ViewStyle } from 'react-native';
+import {
+  StyleProp,
+  Text,
+  TextStyle,
+  TouchableOpacity,
+  ViewStyle,
+} from 'react-native';
 import { commonStyles } from '../theme/commonStyles';
 
 type Props = {
   title: string;
   onPress?: () => void;
-  style?: ViewStyle;
-  textStyle?: TextStyle;
+  disabled?: boolean;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
 };
 
-export default function AppButton({ title, onPress, style, textStyle }: Props) {
+export default function AppButton({
+  title,
+  onPress,
+  disabled = false,
+  style,
+  textStyle,
+}: Props) {
   return (
-    <TouchableOpacity style={[commonStyles.primaryButton, style]} onPress={onPress}>
+    <TouchableOpacity
+      style={[commonStyles.primaryButton, disabled && { opacity: 0.65 }, style]}
+      onPress={onPress}
+      disabled={disabled}
+    >
       <Text style={[commonStyles.primaryButtonText, textStyle]}>{title}</Text>
     </TouchableOpacity>
   );

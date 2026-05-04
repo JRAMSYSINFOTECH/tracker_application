@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import session from "express-session";
@@ -13,14 +14,23 @@ import "./utils/cronJobs.js";
 import aiRoutes from "./routes/aiRoutes.js";
 
 const app = express();
+const sessionSecret =
+  process.env.SESSION_SECRET ||
+  process.env.JWT_SECRET ||
+  "dev-session-secret";
 
-app.use(cors());
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
 app.use(express.json());
 
-// ✅ FIX: session + passport BEFORE routes
+
 app.use(
   session({
-    secret: "secretkey",
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: true,
   })

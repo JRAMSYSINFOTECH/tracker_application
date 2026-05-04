@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import {
   Image,
   StyleSheet,
@@ -15,16 +15,34 @@ import OrDivider from '../constants/src/components/OrDivider';
 import TopCurve from '../constants/src/components/TopCurve';
 import { colors } from '../constants/src/theme/colors';
 import { commonStyles } from '../constants/src/theme/commonStyles';
+import { authApi, getApiErrorMessage, setAuthToken } from '../services/api';
+import { startGoogleAuth } from '../services/googleAuth';
+
+const firstParam = (value: string | string[] | undefined) =>
+  Array.isArray(value) ? value[0] : value;
 
 export default function LoginScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{
+    googleError?: string | string[];
+  }>();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = () => {
+  useEffect(() => {
+    const googleError = firstParam(params.googleError);
+
+    if (googleError) {
+      setError(googleError);
+    }
+  }, [params.googleError]);
+
+  const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
       setError('Please fill all fields');
       return;
@@ -36,7 +54,33 @@ export default function LoginScreen() {
     }
 
     setError('');
-    router.replace('/(tabs)');
+    setIsSubmitting(true);
+
+    try {
+      const response = await authApi.login({
+        email: email.trim(),
+        password,
+      });
+
+      setAuthToken(response.token);
+      router.replace('/(tabs)');
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Login failed. Please try again.'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setIsGoogleSubmitting(true);
+
+    try {
+      await startGoogleAuth();
+    } catch {
+      setError('Could not open Google login. Please try again.');
+      setIsGoogleSubmitting(false);
+    }
   };
 
   return (
@@ -52,7 +96,7 @@ export default function LoginScreen() {
         <Text style={styles.title}>Login</Text>
 
         <View style={styles.accountRow}>
-          <Text style={styles.accountText}>Don't have an account? </Text>
+          <Text style={styles.accountText}>{"Don't have an account? "}</Text>
           <TouchableOpacity onPress={() => router.push('/signup')}>
             <Text style={styles.link}>SignUp</Text>
           </TouchableOpacity>
@@ -60,7 +104,7 @@ export default function LoginScreen() {
 
         <View style={styles.form}>
           <AppInput
-            placeholder="Email / Phone number"
+            placeholder="Email"
             value={email}
             onChangeText={(text: string) => {
               setEmail(text);
@@ -100,19 +144,26 @@ export default function LoginScreen() {
           {error ? <Text style={commonStyles.errorText}>{error}</Text> : null}
 
           <AppButton
-            title="Login"
+            title={isSubmitting ? 'Logging in...' : 'Login'}
             onPress={handleLogin}
+            disabled={isSubmitting}
             style={{ marginTop: 20, marginBottom: 25 }}
           />
 
           <OrDivider />
 
-          <TouchableOpacity style={styles.googleButton}>
+          <TouchableOpacity
+            style={[styles.googleButton, isGoogleSubmitting && styles.disabledButton]}
+            onPress={handleGoogleLogin}
+            disabled={isGoogleSubmitting}
+          >
             <Image
               source={require('../assets/images/google-logo.png')}
               style={styles.googleLogo}
             />
-            <Text style={styles.googleText}>Continue with Google</Text>
+            <Text style={styles.googleText}>
+              {isGoogleSubmitting ? 'Opening Google...' : 'Continue with Google'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -204,6 +255,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  disabledButton: {
+    opacity: 0.65,
   },
 
   googleLogo: {

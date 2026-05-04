@@ -5,8 +5,13 @@ import cloudinary from "../config/cloudinary.js";
 
 // Signup
 export const signup = async (req, res) => {
-  const { name, email, password } = req.body;
-  const emailLower = email.toLowerCase();
+  const { name, email, password, gender } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: "Name, email and password are required" });
+  }
+
+  const emailLower = email.trim().toLowerCase();
 
   try {
     const existing = await prisma.user.findUnique({
@@ -21,14 +26,22 @@ export const signup = async (req, res) => {
 
     const user = await prisma.user.create({
       data: {
-        name,
+        name: name.trim(),
         email: emailLower,
-        password_hash: hashedPassword
+        password_hash: hashedPassword,
+        gender
       }
     });
 
+    const token = jwt.sign(
+      { id: user.user_id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
     res.status(201).json({
       message: "User registered successfully",
+      token,
       userId: user.user_id
     });
 
@@ -40,7 +53,12 @@ export const signup = async (req, res) => {
 // Login
 export const login = async (req, res) => {
   const { email, password } = req.body;
-  const emailLower = email.toLowerCase();
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
+  }
+
+  const emailLower = email.trim().toLowerCase();
 
   try {
     const user = await prisma.user.findUnique({
