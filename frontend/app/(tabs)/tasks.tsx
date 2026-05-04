@@ -1,25 +1,102 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
-    Alert,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
-type FilterType = 'All' | 'ToDo' | 'InProgress' | 'Completed';
+import {
+  BackendTask,
+  getApiErrorMessage,
+  taskApi,
+  TaskStatus,
+} from '../../services/api';
+
+type FilterType = 'All' | 'ToDo' | 'InProgress' | 'Completed' | 'Missed';
+type DisplayStatus = Exclude<FilterType, 'All'>;
 
 type TaskType = {
   id: number;
   title: string;
   note: string;
   time: string;
-  status: FilterType;
+  status: DisplayStatus;
+  deadline: string;
+};
+
+const backendStatusToDisplay: Record<TaskStatus, DisplayStatus> = {
+  pending: 'ToDo',
+  in_progress: 'InProgress',
+  completed: 'Completed',
+  missed: 'Missed',
+};
+
+const displayStatusToBackend: Record<DisplayStatus, TaskStatus> = {
+  ToDo: 'pending',
+  InProgress: 'in_progress',
+  Completed: 'completed',
+  Missed: 'missed',
+};
+
+const formatTaskTime = (deadline: string) => {
+  const date = new Date(deadline);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'No time';
+  }
+
+  const rawHours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const meridiem = rawHours >= 12 ? 'PM' : 'AM';
+  const hours = String(rawHours % 12 || 12).padStart(2, '0');
+
+  return `${hours}:${minutes} ${meridiem}`;
+};
+
+const mapBackendTask = (task: BackendTask): TaskType => ({
+  id: task.task_id,
+  title: task.title,
+  note: task.description || '',
+  time: formatTaskTime(task.deadline),
+  status: backendStatusToDisplay[task.status],
+  deadline: task.deadline,
+});
+
+const updateDeadlineTime = (deadline: string, time: string) => {
+  const match = time.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  const date = new Date(deadline);
+
+  if (!match || Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  let hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const meridiem = match[3].toUpperCase();
+
+  if (hours < 1 || hours > 12 || minutes < 0 || minutes > 59) {
+    return null;
+  }
+
+  if (meridiem === 'PM' && hours !== 12) {
+    hours += 12;
+  }
+
+  if (meridiem === 'AM' && hours === 12) {
+    hours = 0;
+  }
+
+  date.setHours(hours, minutes, 0, 0);
+  return date.toISOString();
 };
 
 export default function MyTasksScreen() {
@@ -27,46 +104,41 @@ export default function MyTasksScreen() {
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('All');
   const [searchText, setSearchText] = useState('');
   const [showFilters, setShowFilters] = useState(false);
-
-  const [tasks, setTasks] = useState<TaskType[]>([
-    {
-      id: 1,
-      title: 'Morning Revision',
-      note: 'Revise Java concepts and notes.',
-      time: '07:00 AM',
-      status: 'ToDo',
-    },
-    {
-      id: 2,
-      title: 'Coding Practice',
-      note: 'Solve 3 DSA problems today.',
-      time: '10:00 AM',
-      status: 'InProgress',
-    },
-    {
-      id: 3,
-      title: 'Project Work',
-      note: 'Continue Kubernetes project explanation.',
-      time: '02:00 PM',
-      status: 'ToDo',
-    },
-    {
-      id: 4,
-      title: 'Mock Test',
-      note: 'Complete one aptitude mock test.',
-      time: '06:00 PM',
-      status: 'Completed',
-    },
-  ]);
+  const [tasks, setTasks] = useState<TaskType[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
+  const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null);
 
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editNote, setEditNote] = useState('');
   const [editTime, setEditTime] = useState('');
-  const [editStatus, setEditStatus] = useState<FilterType>('ToDo');
+  const [editStatus, setEditStatus] = useState<DisplayStatus>('ToDo');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
 
-  const filters: FilterType[] = ['All', 'ToDo', 'InProgress', 'Completed'];
+  const filters: FilterType[] = ['All', 'ToDo', 'InProgress', 'Completed', 'Missed'];
+  const editableStatuses: DisplayStatus[] = ['ToDo', 'InProgress', 'Completed', 'Missed'];
+
+  const loadTasks = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError('');
+
+    try {
+      const response = await taskApi.list();
+      setTasks(response.map(mapBackendTask));
+    } catch (err) {
+      setLoadError(getApiErrorMessage(err, 'Could not load tasks.'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTasks();
+    }, [loadTasks])
+  );
 
   const filteredTasks = useMemo(() => {
     let filtered =
@@ -93,6 +165,8 @@ export default function MyTasksScreen() {
         return styles.progressBadge;
       case 'Completed':
         return styles.completedBadge;
+      case 'Missed':
+        return styles.missedBadge;
       default:
         return styles.todoBadge;
     }
@@ -106,13 +180,27 @@ export default function MyTasksScreen() {
         return styles.progressText;
       case 'Completed':
         return styles.completedText;
+      case 'Missed':
+        return styles.missedText;
       default:
         return styles.todoText;
     }
   };
 
-  const handleDeleteTask = (id: number) => {
-    setTasks((prev) => prev.filter((item) => item.id !== id));
+  const handleDeleteTask = async (id: number) => {
+    setDeletingTaskId(id);
+
+    try {
+      await taskApi.delete(id);
+      setTasks((prev) => prev.filter((item) => item.id !== id));
+    } catch (err) {
+      Alert.alert(
+        'Could not delete task',
+        getApiErrorMessage(err, 'Please try deleting the task again.')
+      );
+    } finally {
+      setDeletingTaskId(null);
+    }
   };
 
   const openEditModal = (task: TaskType) => {
@@ -124,27 +212,50 @@ export default function MyTasksScreen() {
     setEditModalVisible(true);
   };
 
-  const handleSaveEdit = () => {
-    if (!editTitle.trim() || !editNote.trim() || !editTime.trim()) {
+  const handleSaveEdit = async () => {
+    if (!editTitle.trim() || !editTime.trim()) {
       Alert.alert('Missing details', 'Please fill all edit fields.');
       return;
     }
 
-    setTasks((prev) =>
-      prev.map((item) =>
-        item.id === editingTaskId
-          ? {
-              ...item,
-              title: editTitle,
-              note: editNote,
-              time: editTime,
-              status: editStatus,
-            }
-          : item
-      )
-    );
+    const existingTask = tasks.find((item) => item.id === editingTaskId);
 
-    setEditModalVisible(false);
+    if (!existingTask || editingTaskId === null) {
+      Alert.alert('Could not update task', 'Please close and open the task again.');
+      return;
+    }
+
+    const updatedDeadline = updateDeadlineTime(existingTask.deadline, editTime);
+
+    if (!updatedDeadline) {
+      Alert.alert('Invalid time', 'Please enter time as HH:MM AM or HH:MM PM.');
+      return;
+    }
+
+    setIsSavingEdit(true);
+
+    try {
+      const response = await taskApi.update(editingTaskId, {
+        title: editTitle.trim(),
+        description: editNote.trim(),
+        status: displayStatusToBackend[editStatus],
+        deadline: updatedDeadline,
+      });
+
+      const updatedTask = mapBackendTask(response.task);
+
+      setTasks((prev) =>
+        prev.map((item) => (item.id === editingTaskId ? updatedTask : item))
+      );
+      setEditModalVisible(false);
+    } catch (err) {
+      Alert.alert(
+        'Could not update task',
+        getApiErrorMessage(err, 'Please try saving the task again.')
+      );
+    } finally {
+      setIsSavingEdit(false);
+    }
   };
 
   const FilterChip = ({
@@ -246,7 +357,24 @@ export default function MyTasksScreen() {
 
         <Text style={styles.sectionTitle}>Task List</Text>
 
-        {filteredTasks.map((item) => (
+        {isLoading && (
+          <View style={styles.emptyCard}>
+            <ActivityIndicator color="#111" />
+            <Text style={styles.emptyText}>Loading tasks...</Text>
+          </View>
+        )}
+
+        {!isLoading && loadError ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>Could not load tasks</Text>
+            <Text style={styles.emptyText}>{loadError}</Text>
+            <TouchableOpacity style={styles.retryBtn} onPress={loadTasks}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {!isLoading && !loadError && filteredTasks.map((item) => (
           <View key={item.id} style={styles.taskCard}>
             <View style={styles.cardTopRow}>
               <View style={styles.timePill}>
@@ -261,7 +389,7 @@ export default function MyTasksScreen() {
             </View>
 
             <Text style={styles.taskTitle}>{item.title}</Text>
-            <Text style={styles.taskNote}>{item.note}</Text>
+            {item.note ? <Text style={styles.taskNote}>{item.note}</Text> : null}
 
             <View style={styles.cardActions}>
               <TouchableOpacity style={styles.editBtn} onPress={() => openEditModal(item)}>
@@ -270,17 +398,23 @@ export default function MyTasksScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.deleteBtn}
+                style={[
+                  styles.deleteBtn,
+                  deletingTaskId === item.id && styles.disabledBtn,
+                ]}
                 onPress={() => handleDeleteTask(item.id)}
+                disabled={deletingTaskId === item.id}
               >
                 <Ionicons name="trash-outline" size={16} color="#B91C1C" />
-                <Text style={styles.deleteBtnText}>Delete</Text>
+                <Text style={styles.deleteBtnText}>
+                  {deletingTaskId === item.id ? 'Deleting...' : 'Delete'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
         ))}
 
-        {filteredTasks.length === 0 && (
+        {!isLoading && !loadError && filteredTasks.length === 0 && (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>No tasks found</Text>
             <Text style={styles.emptyText}>
@@ -326,14 +460,14 @@ export default function MyTasksScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.filterRow}
             >
-              {['ToDo', 'InProgress', 'Completed'].map((item) => (
+              {editableStatuses.map((item) => (
                 <TouchableOpacity
                   key={item}
                   style={[
                     styles.filterChip,
                     editStatus === item && styles.activeFilterChip,
                   ]}
-                  onPress={() => setEditStatus(item as FilterType)}
+                  onPress={() => setEditStatus(item)}
                 >
                   <Text
                     style={[
@@ -355,8 +489,14 @@ export default function MyTasksScreen() {
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.modalSaveBtn} onPress={handleSaveEdit}>
-                <Text style={styles.modalSaveText}>Save</Text>
+              <TouchableOpacity
+                style={[styles.modalSaveBtn, isSavingEdit && styles.disabledBtn]}
+                onPress={handleSaveEdit}
+                disabled={isSavingEdit}
+              >
+                <Text style={styles.modalSaveText}>
+                  {isSavingEdit ? 'Saving...' : 'Save'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -605,6 +745,14 @@ const styles = StyleSheet.create({
     color: '#15803D',
   },
 
+  missedBadge: {
+    backgroundColor: '#FEE2E2',
+  },
+
+  missedText: {
+    color: '#B91C1C',
+  },
+
   taskTitle: {
     fontSize: 17,
     fontWeight: '700',
@@ -678,6 +826,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
+  },
+
+  retryBtn: {
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: '#111',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 18,
+  },
+
+  retryText: {
+    color: '#111',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  disabledBtn: {
+    opacity: 0.65,
   },
 
   modalOverlay: {

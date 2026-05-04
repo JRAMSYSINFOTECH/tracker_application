@@ -11,6 +11,53 @@ import {
   View,
 } from 'react-native';
 
+import {
+  getApiErrorMessage,
+  reminderApi,
+  ReminderFrequency,
+  taskApi,
+  TaskImportance,
+} from '../services/api';
+
+const DEFAULT_ESTIMATED_MINUTES = 30;
+
+const priorityToImportance: Record<string, TaskImportance> = {
+  High: 'high',
+  Medium: 'medium',
+  Low: 'low',
+};
+
+const frequencyToBackend: Record<string, ReminderFrequency> = {
+  Once: 'once',
+  Daily: 'daily',
+  Weekly: 'weekly',
+  Custom: 'custom',
+};
+
+const parseDeadline = (value: string, meridiem: 'AM' | 'PM' | '') => {
+  const match = value.trim().match(/^(\d{1,2})\s*[/-]\s*(\d{1,2})\s*[/-]\s*(\d{4})$/);
+
+  if (!match || !meridiem) {
+    return null;
+  }
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const hour = meridiem === 'AM' ? 9 : 18;
+  const parsed = new Date(year, month - 1, day, hour, 0, 0, 0);
+
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return parsed.toISOString();
+};
+
 export default function AddTaskScreen() {
   const router = useRouter();
   const [title, setTitle] = useState('');
@@ -19,6 +66,7 @@ export default function AddTaskScreen() {
   const [meridiem, setMeridiem] = useState<'AM' | 'PM' | ''>('');
   const [frequency, setFrequency] = useState('');
   const [priority, setPriority] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const Checkbox = ({
     label,
@@ -37,14 +85,58 @@ export default function AddTaskScreen() {
     </TouchableOpacity>
   );
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!title.trim() || !deadline.trim() || !meridiem || !frequency || !priority) {
       Alert.alert('Missing details', 'Please fill all required fields.');
       return;
     }
 
-    Alert.alert('Success', 'Task saved successfully');
-    router.back();
+    const parsedDeadline = parseDeadline(deadline, meridiem);
+
+    if (!parsedDeadline) {
+      Alert.alert('Invalid deadline', 'Please enter deadline as DD/MM/YYYY.');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const response = await taskApi.create({
+        title: title.trim(),
+        description: note.trim() || undefined,
+        deadline: parsedDeadline,
+        estimated_minutes: DEFAULT_ESTIMATED_MINUTES,
+        importance_hint: priorityToImportance[priority],
+      });
+
+      try {
+        await reminderApi.create({
+          task_id: response.task.task_id,
+          remind_at: parsedDeadline,
+          frequency: frequencyToBackend[frequency],
+        });
+      } catch (err) {
+        Alert.alert(
+          'Task saved',
+          getApiErrorMessage(
+            err,
+            'Task was saved, but the reminder could not be created.'
+          )
+        );
+        router.back();
+        return;
+      }
+
+      Alert.alert('Success', 'Task saved successfully');
+      router.back();
+    } catch (err) {
+      Alert.alert(
+        'Could not save task',
+        getApiErrorMessage(err, 'Please login again and try saving the task.')
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleClear = () => {
@@ -168,8 +260,14 @@ export default function AddTaskScreen() {
         </View>
 
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.actionBtn} onPress={handleSave}>
-            <Text style={styles.actionBtnText}>Save</Text>
+          <TouchableOpacity
+            style={[styles.actionBtn, isSaving && styles.disabledBtn]}
+            onPress={handleSave}
+            disabled={isSaving}
+          >
+            <Text style={styles.actionBtnText}>
+              {isSaving ? 'Saving...' : 'Save'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionBtn} onPress={handleClear}>
@@ -339,6 +437,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
+  },
+
+  disabledBtn: {
+    opacity: 0.65,
   },
 
   actionBtnText: {
