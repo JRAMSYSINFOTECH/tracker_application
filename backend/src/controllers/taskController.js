@@ -1,8 +1,30 @@
 import prisma from "../config/prisma.js";
 
+// 🔹 Helper: Mark plan as stale only if exists
+const markPlanAsStale = async (userId) => {
+  const existingPlan = await prisma.dailyPlan.findFirst({
+    where: {
+      user_id: userId,
+      status: "generated"
+    }
+  });
+
+  if (existingPlan) {
+    await prisma.dailyPlan.updateMany({
+      where: {
+        user_id: userId,
+        status: "generated"
+      },
+      data: {
+        status: "stale"
+      }
+    });
+  }
+};
+
 // ✅ Create Task
 export const createTask = async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.user_id;
 
   try {
     const {
@@ -19,12 +41,19 @@ export const createTask = async (req, res) => {
       });
     }
 
+    // ✅ Deadline validation
+    if (new Date(deadline) < new Date()) {
+      return res.status(400).json({
+        message: "Deadline cannot be in the past"
+      });
+    }
+
     if (estimated_minutes && estimated_minutes < 0) {
       return res.status(400).json({
         message: "Estimated time must be positive"
       });
     }
-    
+
     const task = await prisma.task.create({
       data: {
         user_id: userId,
@@ -36,6 +65,8 @@ export const createTask = async (req, res) => {
       }
     });
 
+    await markPlanAsStale(userId);
+
     res.status(201).json({
       message: "Task created successfully",
       task
@@ -46,29 +77,17 @@ export const createTask = async (req, res) => {
   }
 };
 
-
-// ✅ Get All Tasks (with filters)
+// ✅ Get All Tasks
 export const getAllTasks = async (req, res) => {
-  const userId = req.user.id;
-
+  const userId = req.user.user_id;
   const { status, priority, search } = req.query;
 
   try {
-    const where = {
-      user_id: userId
-    };
+    const where = { user_id: userId };
 
-    // 🔹 Status filter
-    if (status) {
-      where.status = status;
-    }
+    if (status) where.status = status;
+    if (priority) where.importance_hint = priority;
 
-    // 🔹 Priority filter
-    if (priority) {
-      where.importance_hint = priority;
-    }
-
-    // 🔹 Search filter (title)
     if (search) {
       where.OR = [
         { title: { contains: search, mode: "insensitive" } },
@@ -78,9 +97,7 @@ export const getAllTasks = async (req, res) => {
 
     const tasks = await prisma.task.findMany({
       where,
-      orderBy: {
-        created_at: "desc"
-      }
+      orderBy: { created_at: "desc" }
     });
 
     res.json(tasks);
@@ -90,10 +107,9 @@ export const getAllTasks = async (req, res) => {
   }
 };
 
-
 // ✅ Get Single Task
 export const getTaskById = async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.user_id;
   const taskId = parseInt(req.params.id);
 
   try {
@@ -115,9 +131,9 @@ export const getTaskById = async (req, res) => {
   }
 };
 
-//UpdateTask
+// ✅ Update Task
 export const updateTask = async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.user_id;
   const taskId = parseInt(req.params.id);
 
   try {
@@ -144,6 +160,8 @@ export const updateTask = async (req, res) => {
       }
     });
 
+    await markPlanAsStale(userId);
+
     res.json({
       message: "Task updated successfully",
       task: updatedTask
@@ -156,7 +174,7 @@ export const updateTask = async (req, res) => {
 
 // ✅ Delete Task
 export const deleteTask = async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.user_id;
   const taskId = parseInt(req.params.id);
 
   try {
@@ -174,6 +192,8 @@ export const deleteTask = async (req, res) => {
     await prisma.task.delete({
       where: { task_id: taskId }
     });
+
+    await markPlanAsStale(userId);
 
     res.json({ message: "Task deleted successfully" });
 

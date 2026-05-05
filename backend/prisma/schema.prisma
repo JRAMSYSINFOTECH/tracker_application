@@ -62,6 +62,7 @@ model DailyPlan {
   user_id      Int
   plan_date    DateTime
   generated_at DateTime @default(now())
+  status       PlanState @default(generated)
 
   user  User @relation(fields: [user_id], references: [user_id])
   items DailyPlanItem[]
@@ -77,9 +78,11 @@ model DailyPlanItem {
   end_time     DateTime?
   slot_order   Int
   item_status  PlanStatus @default(scheduled)
+  confidence_score Float 
 
   plan DailyPlan @relation(fields: [plan_id], references: [plan_id])
   task Task      @relation(fields: [task_id], references: [task_id])
+  @@unique([plan_id, task_id]) 
 }
 
 model Reminder {
@@ -107,9 +110,14 @@ enum Status {
 
 enum PlanStatus {
   scheduled
-  done
+  completed
   skipped
   moved
+}
+
+enum PlanState {
+  generated
+  stale
 }
 
 enum Frequency {
