@@ -4,8 +4,7 @@ import {
   getTasks,
   getTodayPlan,
   getReminders,
-  getPriorityStats,
-  generateDailyPlan,
+  getPriorityStats
 } from "../controllers/dashboardController.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -16,7 +15,6 @@ router.get("/overview", authMiddleware, getDashboardOverview);
 router.get("/tasks", authMiddleware, getTasks);
 router.get("/reminders", authMiddleware, getReminders);
 router.get("/priority-stats", authMiddleware, getPriorityStats);
-router.post("/generate-plan", authMiddleware, generateDailyPlan);
 router.get("/today-plan", authMiddleware, getTodayPlan);
 
 export default router;

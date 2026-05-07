@@ -11,6 +11,7 @@ import taskRoutes from "./routes/taskRoutes.js";
 import reminderRoutes from "./routes/reminderRoutes.js";
 import "./utils/cronJobs.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import planRoutes from "./routes/planRoutes.js";
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use("/api/tasks", taskRoutes);
 app.use("/api/reminders", reminderRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/auth", googleAuthRoutes);
+app.use("/api/plan", planRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running");
