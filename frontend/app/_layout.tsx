@@ -1,38 +1,24 @@
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
-import { AuthProvider, useAuth } from '../constants/src/context/AuthContext';
-import { TaskProvider } from '../constants/src/context/TaskContext';
+import 'react-native-reanimated';
 
-function RootNavigator() {
-  const { loading } = useAuth();
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color="#d14df0" />
-      </View>
-    );
-  }
-
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="login" />
-      <Stack.Screen name="signup" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="modal" />
-    </Stack>
-  );
-}
+export const unstable_settings = {
+  anchor: '(tabs)',
+};
 
 export default function RootLayout() {
+  const colorScheme = useColorScheme();
+
   return (
-    <AuthProvider>
-      <TaskProvider>
-        <RootNavigator />
-        <StatusBar hidden />
-      </TaskProvider>
-    </AuthProvider>
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+      </Stack>
+      <StatusBar style="auto" />
+    </ThemeProvider>
   );
 }
