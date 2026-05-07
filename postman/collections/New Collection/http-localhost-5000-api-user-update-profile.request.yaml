@@ -1,0 +1,12 @@
+$kind: http-request
+name: http://localhost:5000/api/user/update-profile
+url: http://localhost:5000/api/user/update-profile
+method: PUT
+body:
+  type: json
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzc1NzQ2NDMyLCJleHAiOjE3NzU3NTAwMzJ9.rkmnHi31Fu_ReREPxyEZIiNql-vYxD0C9inMC8y3LsE
+order: 1775749172606
