@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   Image,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,21 +21,73 @@ type Task = {
   title: string;
   time: string;
   status: TaskStatus;
+  dateKey: string;
 };
 
 export default function DashboardScreen() {
   const router = useRouter();
+
   const [selectedFilter, setSelectedFilter] = useState<'all' | TaskStatus>('all');
   const [drawerVisible, setDrawerVisible] = useState(false);
+  const [monthModalVisible, setMonthModalVisible] = useState(false);
+  const [quickActionsVisible, setQuickActionsVisible] = useState(false);
 
   const USER_NAME = 'Boddu Vyshnavi';
 
+  const today = new Date();
+  const [selectedDate, setSelectedDate] = useState<Date>(today);
+
   const tasks: Task[] = [
-    { id: '1', title: 'Lunch Date', time: '06 April, 2026 12:00 PM', status: 'pending' },
-    { id: '2', title: 'Interview', time: '06 April, 2026 02:00 PM', status: 'completed' },
-    { id: '3', title: 'React Native Practice', time: 'Today 05:00 PM', status: 'pending' },
-    { id: '4', title: 'Push to GitHub', time: 'Today 07:00 PM', status: 'completed' },
+    {
+      id: '1',
+      title: 'Lunch Date',
+      time: '12:00 PM',
+      status: 'pending',
+      dateKey: formatDateKey(new Date()),
+    },
+    {
+      id: '2',
+      title: 'Interview',
+      time: '02:00 PM',
+      status: 'completed',
+      dateKey: formatDateKey(new Date()),
+    },
+    {
+      id: '3',
+      title: 'React Native Practice',
+      time: '05:00 PM',
+      status: 'pending',
+      dateKey: formatDateKey(new Date()),
+    },
+    {
+      id: '4',
+      title: 'Project Discussion',
+      time: '11:00 AM',
+      status: 'pending',
+      dateKey: getDateWithOffset(1),
+    },
+    {
+      id: '5',
+      title: 'Design Review',
+      time: '03:30 PM',
+      status: 'completed',
+      dateKey: getDateWithOffset(1),
+    },
+    {
+      id: '6',
+      title: 'Push to GitHub',
+      time: '07:00 PM',
+      status: 'completed',
+      dateKey: getDateWithOffset(3),
+    },
   ];
+
+  const navigateWithClose = (path: string) => {
+    setDrawerVisible(false);
+    setQuickActionsVisible(false);
+    setMonthModalVisible(false);
+    router.push(path as any);
+  };
 
   const initials = useMemo(() => {
     return USER_NAME.trim()
@@ -45,8 +98,10 @@ export default function DashboardScreen() {
       .toUpperCase();
   }, [USER_NAME]);
 
+  const selectedDateKey = formatDateKey(selectedDate);
+  const todayKey = formatDateKey(today);
+
   const calendarDays = useMemo(() => {
-    const today = new Date();
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
     return Array.from({ length: 6 }, (_, index) => {
@@ -56,37 +111,101 @@ export default function DashboardScreen() {
       return {
         day: dayNames[date.getDay()],
         date: String(date.getDate()).padStart(2, '0'),
-        active: index === 0,
+        fullDate: new Date(date),
+        active: formatDateKey(date) === selectedDateKey,
       };
     });
-  }, []);
-
-  const formattedToday = useMemo(() => {
-    return new Intl.DateTimeFormat('en-GB', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    }).format(new Date());
-  }, []);
+  }, [today, selectedDateKey]);
 
   const pendingCount = tasks.filter((task) => task.status === 'pending').length;
   const completedCount = tasks.filter((task) => task.status === 'completed').length;
   const totalCount = tasks.length;
+  const progressPercent =
+    totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
 
   const filteredTasks = useMemo(() => {
-    if (selectedFilter === 'all') return tasks;
-    return tasks.filter((task) => task.status === selectedFilter);
-  }, [selectedFilter]);
+    const selectedTasks = tasks.filter((task) => task.dateKey === selectedDateKey);
+    if (selectedFilter === 'all') return selectedTasks;
+    return selectedTasks.filter((task) => task.status === selectedFilter);
+  }, [selectedFilter, selectedDateKey]);
 
-  const navigateWithClose = (path: string) => {
-    setDrawerVisible(false);
-    setTimeout(() => router.push(path as any), 120);
-  };
+  const selectedDateTasks = useMemo(() => {
+    return tasks.filter((task) => task.dateKey === selectedDateKey);
+  }, [selectedDateKey]);
 
-  const openAIPlanner = () => {
-    setDrawerVisible(false);
-    router.push('/(tabs)/home/ai-scheduler' as any);
-  };
+  const monthGrid = useMemo(() => {
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const startDay = firstDay.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevMonthDays = new Date(year, month, 0).getDate();
+
+    const cells: {
+      date: Date;
+      label: number;
+      currentMonth: boolean;
+      isToday: boolean;
+      isSelected: boolean;
+      hasTasks: boolean;
+    }[] = [];
+
+    for (let i = startDay - 1; i >= 0; i--) {
+      const d = new Date(year, month - 1, prevMonthDays - i);
+      cells.push({
+        date: d,
+        label: d.getDate(),
+        currentMonth: false,
+        isToday: formatDateKey(d) === todayKey,
+        isSelected: formatDateKey(d) === selectedDateKey,
+        hasTasks: tasks.some((task) => task.dateKey === formatDateKey(d)),
+      });
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const d = new Date(year, month, day);
+      cells.push({
+        date: d,
+        label: day,
+        currentMonth: true,
+        isToday: formatDateKey(d) === todayKey,
+        isSelected: formatDateKey(d) === selectedDateKey,
+        hasTasks: tasks.some((task) => task.dateKey === formatDateKey(d)),
+      });
+    }
+
+    while (cells.length < 42) {
+      const nextDay = cells.length - (startDay + daysInMonth) + 1;
+      const d = new Date(year, month + 1, nextDay);
+      cells.push({
+        date: d,
+        label: d.getDate(),
+        currentMonth: false,
+        isToday: formatDateKey(d) === todayKey,
+        isSelected: formatDateKey(d) === selectedDateKey,
+        hasTasks: tasks.some((task) => task.dateKey === formatDateKey(d)),
+      });
+    }
+
+    return cells;
+  }, [selectedDate, selectedDateKey, todayKey]);
+
+  const formattedSelectedDate = useMemo(() => {
+    return new Intl.DateTimeFormat('en-GB', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    }).format(selectedDate);
+  }, [selectedDate]);
+
+  const displaySelectedDate = useMemo(() => {
+    return new Intl.DateTimeFormat('en-GB', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+    }).format(selectedDate);
+  }, [selectedDate]);
 
   const menuItems = [
     {
@@ -123,7 +242,7 @@ export default function DashboardScreen() {
       title: 'Settings',
       icon: 'settings-outline',
       active: false,
-      onPress: () => navigateWithClose('/(tabs)/home/settings'),
+      onPress: () => navigateWithClose('/(tabs)/explore'),
     },
   ];
 
@@ -139,7 +258,10 @@ export default function DashboardScreen() {
         <View style={styles.headerRow}>
           <TouchableOpacity
             style={styles.menuButton}
-            onPress={() => setDrawerVisible(true)}
+            onPress={() => {
+              setDrawerVisible(true);
+              setQuickActionsVisible(false);
+            }}
             activeOpacity={0.8}
           >
             <Ionicons name="menu-outline" size={24} color="#111" />
@@ -193,11 +315,33 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        <View style={styles.progressCard}>
+          <View style={styles.progressHeader}>
+            <View>
+              <Text style={styles.progressTitle}>Today's Progress</Text>
+              <Text style={styles.progressSubText}>
+                {completedCount} of {totalCount} tasks completed
+              </Text>
+            </View>
+
+            <View style={styles.progressPercentBadge}>
+              <Text style={styles.progressPercentText}>{progressPercent}%</Text>
+            </View>
+          </View>
+
+          <View style={styles.progressBarTrack}>
+            <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+          </View>
+        </View>
+
         <View style={styles.calendarCard}>
           <View style={styles.calendarHeader}>
             <Text style={styles.calendarTitle}>Calendar</Text>
-            <TouchableOpacity activeOpacity={0.8}>
-              <Text style={styles.calendarLink}>View all</Text>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => setMonthModalVisible(true)}
+            >
+              <Text style={styles.calendarLink}>Month view</Text>
             </TouchableOpacity>
           </View>
 
@@ -208,9 +352,10 @@ export default function DashboardScreen() {
           >
             {calendarDays.map((item, index) => (
               <TouchableOpacity
-                key={index}
+                key={`${item.date}-${index}`}
                 style={[styles.dateChip, item.active && styles.dateChipActive]}
                 activeOpacity={0.8}
+                onPress={() => setSelectedDate(item.fullDate)}
               >
                 <Text style={[styles.dayText, item.active && styles.dateChipTextActive]}>
                   {item.day}
@@ -227,14 +372,14 @@ export default function DashboardScreen() {
           <View style={styles.mainCardHeader}>
             <View style={styles.mainTitleWrap}>
               <Text style={styles.cardTitle}>Today's Plan</Text>
-              <Text style={styles.cardDate}>{formattedToday}</Text>
+              <Text style={styles.cardDate}>{displaySelectedDate}</Text>
             </View>
 
             <View style={styles.actionPillsRow}>
               <TouchableOpacity
                 style={styles.aiTaskPill}
                 activeOpacity={0.85}
-                onPress={openAIPlanner}
+                onPress={() => navigateWithClose('/(tabs)/home/ai-scheduler')}
               >
                 <Ionicons name="sparkles-outline" size={14} color="#111" />
                 <Text style={styles.aiTaskPillText}>Generate Plan</Text>
@@ -265,20 +410,14 @@ export default function DashboardScreen() {
               onPress={() => setSelectedFilter('pending')}
             >
               <Text
-                style={[
-                  styles.filterText,
-                  selectedFilter === 'pending' && styles.filterTextActive,
-                ]}
+                style={[styles.filterText, selectedFilter === 'pending' && styles.filterTextActive]}
               >
                 Pending
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.filterChip,
-                selectedFilter === 'completed' && styles.filterChipActive,
-              ]}
+              style={[styles.filterChip, selectedFilter === 'completed' && styles.filterChipActive]}
               onPress={() => setSelectedFilter('completed')}
             >
               <Text
@@ -320,6 +459,15 @@ export default function DashboardScreen() {
               </View>
             </View>
           ))}
+
+          {filteredTasks.length === 0 && (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyTitle}>No tasks for selected date</Text>
+              <Text style={styles.emptyText}>
+                This day has no tasks in the selected filter.
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.tipCard}>
@@ -332,6 +480,167 @@ export default function DashboardScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      <Modal
+        visible={monthModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setMonthModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <Pressable
+            style={styles.modalBackdrop}
+            onPress={() => setMonthModalVisible(false)}
+          />
+
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+
+            <View style={styles.modalHeader}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  const prevMonth = new Date(selectedDate);
+                  prevMonth.setMonth(prevMonth.getMonth() - 1);
+                  setSelectedDate(prevMonth);
+                }}
+              >
+                <Ionicons name="chevron-back" size={22} color="#111" />
+              </TouchableOpacity>
+
+              <Text style={styles.modalTitle}>
+                {new Intl.DateTimeFormat('en-GB', {
+                  month: 'long',
+                  year: 'numeric',
+                }).format(selectedDate)}
+              </Text>
+
+              <TouchableOpacity
+                activeOpacity={0.8}
+                onPress={() => {
+                  const nextMonth = new Date(selectedDate);
+                  nextMonth.setMonth(nextMonth.getMonth() + 1);
+                  setSelectedDate(nextMonth);
+                }}
+              >
+                <Ionicons name="chevron-forward" size={22} color="#111" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.weekHeader}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                <Text key={day} style={styles.weekHeaderText}>
+                  {day}
+                </Text>
+              ))}
+            </View>
+
+            <View style={styles.monthGrid}>
+              {monthGrid.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.dayCell}
+                  activeOpacity={0.85}
+                  onPress={() => setSelectedDate(item.date)}
+                >
+                  <View
+                    style={[
+                      styles.dayNumberWrap,
+                      item.isSelected && styles.selectedDayWrap,
+                      item.isToday && !item.isSelected && styles.todayDayWrap,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.dayNumber,
+                        !item.currentMonth && styles.otherMonthText,
+                        item.isSelected && styles.selectedDayText,
+                        item.isToday && !item.isSelected && styles.todayDayText,
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </View>
+                  {item.hasTasks && <View style={styles.dot} />}
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <View style={styles.legendRow}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#b144db' }]} />
+                <Text style={styles.legendText}>Has tasks</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#d8a9f2' }]} />
+                <Text style={styles.legendText}>Selected date</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#d8eef7' }]} />
+                <Text style={styles.legendText}>Today</Text>
+              </View>
+            </View>
+
+            <View style={styles.selectedTasksCard}>
+              <View style={styles.selectedTasksHeader}>
+                <Text style={styles.selectedTasksTitle}>Selected Day</Text>
+                <Text style={styles.selectedTasksDate}>{formattedSelectedDate}</Text>
+                <View style={styles.selectedTasksCount}>
+                  <Text style={styles.selectedTasksCountText}>
+                    {selectedDateTasks.length} Tasks
+                  </Text>
+                </View>
+              </View>
+
+              {selectedDateTasks.length > 0 ? (
+                selectedDateTasks.map((task) => (
+                  <View key={task.id} style={styles.modalTaskRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.modalTaskTitle}>{task.title}</Text>
+                      <Text style={styles.modalTaskTime}>{task.time}</Text>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        task.status === 'pending'
+                          ? styles.pendingBadge
+                          : styles.completedBadge,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusText,
+                          task.status === 'pending'
+                            ? styles.pendingBadgeText
+                            : styles.completedBadgeText,
+                        ]}
+                      >
+                        {task.status === 'pending' ? 'Pending' : 'Completed'}
+                      </Text>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View style={styles.emptyModalTasks}>
+                  <Text style={styles.emptyTitle}>No tasks</Text>
+                  <Text style={styles.emptyText}>
+                    No tasks available on this selected date.
+                  </Text>
+                </View>
+              )}
+
+              <TouchableOpacity
+                style={styles.goToDateBtn}
+                activeOpacity={0.85}
+                onPress={() => setMonthModalVisible(false)}
+              >
+                <Text style={styles.goToDateBtnText}>Go to Date</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {drawerVisible && (
         <View style={styles.drawerOverlay} pointerEvents="box-none">
@@ -400,8 +709,68 @@ export default function DashboardScreen() {
         </View>
       )}
 
-      <TouchableOpacity style={styles.fab} activeOpacity={0.9} onPress={openAIPlanner}>
-        <Ionicons name="sparkles-outline" size={24} color="#fff" />
+      {quickActionsVisible && (
+        <Pressable
+          style={styles.quickActionOverlay}
+          onPress={() => setQuickActionsVisible(false)}
+        >
+          <View style={styles.quickActionsMenu}>
+            <TouchableOpacity
+              style={styles.quickActionItem}
+              activeOpacity={0.85}
+              onPress={() => navigateWithClose('/(tabs)/home/add-task')}
+            >
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="add-circle-outline" size={18} color="#a14ccf" />
+              </View>
+              <Text style={styles.quickActionText}>Add Task</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickActionItem}
+              activeOpacity={0.85}
+              onPress={() => navigateWithClose('/(tabs)/home/today-plan')}
+            >
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="calendar-outline" size={18} color="#a14ccf" />
+              </View>
+              <Text style={styles.quickActionText}>Today's Plan</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickActionItem}
+              activeOpacity={0.85}
+              onPress={() => navigateWithClose('/(tabs)/tasks')}
+            >
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="list-outline" size={18} color="#a14ccf" />
+              </View>
+              <Text style={styles.quickActionText}>Tasks</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.quickActionItem}
+              activeOpacity={0.85}
+              onPress={() => navigateWithClose('/(tabs)/home/ai-scheduler')}
+            >
+              <View style={styles.quickActionIcon}>
+                <Ionicons name="sparkles-outline" size={18} color="#a14ccf" />
+              </View>
+              <Text style={styles.quickActionText}>AI Scheduler</Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      )}
+
+      <TouchableOpacity
+        style={styles.fab}
+        activeOpacity={0.9}
+        onPress={() => {
+          setQuickActionsVisible((prev) => !prev);
+          setDrawerVisible(false);
+        }}
+      >
+        <Ionicons name={quickActionsVisible ? 'close' : 'sparkles-outline'} size={24} color="#fff" />
       </TouchableOpacity>
 
       <View style={styles.fabLabelWrap}>
@@ -409,6 +778,19 @@ export default function DashboardScreen() {
       </View>
     </View>
   );
+}
+
+function formatDateKey(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function getDateWithOffset(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return formatDateKey(date);
 }
 
 const styles = StyleSheet.create({
@@ -518,6 +900,56 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#333',
     fontWeight: '700',
+  },
+  progressCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 1.2,
+    borderColor: '#ececec',
+    padding: 14,
+    marginBottom: 14,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    gap: 10,
+  },
+  progressTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#111',
+    marginBottom: 3,
+  },
+  progressSubText: {
+    fontSize: 13,
+    color: '#666',
+  },
+  progressPercentBadge: {
+    minWidth: 58,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f3e1fb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  progressPercentText: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#9f3dd1',
+  },
+  progressBarTrack: {
+    height: 12,
+    borderRadius: 999,
+    backgroundColor: '#f1e5f7',
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: '#b144db',
   },
   calendarCard: {
     backgroundColor: '#fff',
@@ -734,6 +1166,204 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     color: '#555',
   },
+  emptyCard: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1.2,
+    borderColor: '#ececec',
+  },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#111',
+    marginBottom: 4,
+  },
+  emptyText: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 19,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.18)',
+  },
+  modalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 18,
+    paddingTop: 10,
+    paddingBottom: 24,
+    minHeight: '78%',
+  },
+  modalHandle: {
+    width: 58,
+    height: 5,
+    borderRadius: 999,
+    backgroundColor: '#d5ccd9',
+    alignSelf: 'center',
+    marginBottom: 14,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 18,
+    paddingHorizontal: 6,
+  },
+  modalTitle: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#111',
+  },
+  weekHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  weekHeaderText: {
+    width: '14.28%',
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#777',
+    fontWeight: '600',
+  },
+  monthGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 16,
+  },
+  dayCell: {
+    width: '14.28%',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  dayNumberWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedDayWrap: {
+    backgroundColor: '#b144db',
+  },
+  todayDayWrap: {
+    backgroundColor: '#dff3ff',
+  },
+  dayNumber: {
+    fontSize: 16,
+    color: '#111',
+    fontWeight: '700',
+  },
+  otherMonthText: {
+    color: '#bbb',
+  },
+  selectedDayText: {
+    color: '#fff',
+  },
+  todayDayText: {
+    color: '#111',
+  },
+  dot: {
+    marginTop: 5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#b144db',
+  },
+  legendRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 16,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  selectedTasksCard: {
+    backgroundColor: '#faf7fb',
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#f0e4f5',
+  },
+  selectedTasksHeader: {
+    marginBottom: 10,
+  },
+  selectedTasksTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111',
+    marginBottom: 2,
+  },
+  selectedTasksDate: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 8,
+  },
+  selectedTasksCount: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#f3e1fb',
+  },
+  selectedTasksCountText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#9f3dd1',
+  },
+  modalTaskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTaskTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#111',
+    marginBottom: 3,
+  },
+  modalTaskTime: {
+    fontSize: 12,
+    color: '#666',
+  },
+  emptyModalTasks: {
+    paddingVertical: 10,
+  },
+  goToDateBtn: {
+    marginTop: 16,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#b144db',
+  },
+  goToDateBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+  },
   drawerOverlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 15,
@@ -855,6 +1485,49 @@ const styles = StyleSheet.create({
   menuTextActive: {
     color: '#a14ccf',
     fontWeight: '800',
+  },
+  quickActionOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+    zIndex: 18,
+  },
+  quickActionsMenu: {
+    position: 'absolute',
+    right: 24,
+    bottom: 110,
+    width: 190,
+    backgroundColor: '#fff',
+    borderRadius: 22,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 14,
+    borderWidth: 1,
+    borderColor: '#f0e6f5',
+  },
+  quickActionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: 14,
+  },
+  quickActionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#f8f1fc',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  quickActionText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111',
   },
   fab: {
     position: 'absolute',

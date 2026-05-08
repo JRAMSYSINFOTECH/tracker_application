@@ -1,24 +1,42 @@
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Calendar } from 'react-native-calendars';
 
 type FilterType = 'All' | 'ToDo' | 'InProgress' | 'Completed';
 
+type PlanItem = {
+  date: string;
+  time: string;
+  title: string;
+  note: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  status: Exclude<FilterType, 'All'>;
+};
+
 export default function TodayPlanScreen() {
   const router = useRouter();
+
+  const today = new Date();
+  const todayIso = formatDateToISO(today);
+
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('All');
+  const [selectedDate, setSelectedDate] = useState(todayIso);
+  const [showPicker, setShowPicker] = useState(false);
 
-  const todayDate = useMemo(() => {
-    return new Intl.DateTimeFormat('en-GB', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    }).format(new Date());
-  }, []);
-
-  const plans = [
+  const plans: PlanItem[] = [
     {
+      date: todayIso,
       time: '07:00 AM',
       title: 'Morning Revision',
       note: 'Revise Java concepts and formulas.',
@@ -26,6 +44,7 @@ export default function TodayPlanScreen() {
       status: 'ToDo',
     },
     {
+      date: todayIso,
       time: '10:00 AM',
       title: 'Coding Practice',
       note: 'Solve 3 DSA problems from arrays and strings.',
@@ -33,27 +52,81 @@ export default function TodayPlanScreen() {
       status: 'InProgress',
     },
     {
+      date: todayIso,
       time: '02:00 PM',
       title: 'Project Work',
-      note: 'Continue Kubernetes Jenkins explanation.',
+      note: 'Continue Kubernetes + Jenkins explanation.',
       icon: 'laptop-outline',
       status: 'ToDo',
     },
     {
+      date: todayIso,
       time: '06:00 PM',
       title: 'Mock Test',
       note: 'Take one aptitude or coding mock test.',
       icon: 'timer-outline',
       status: 'Completed',
     },
+    {
+      date: getDateWithOffset(1),
+      time: '09:00 AM',
+      title: 'Team Follow-up',
+      note: 'Discuss tracker updates and pending tasks.',
+      icon: 'people-outline',
+      status: 'ToDo',
+    },
+    {
+      date: getDateWithOffset(3),
+      time: '11:30 AM',
+      title: 'Interview Preparation',
+      note: 'Practice React Native and JavaScript questions.',
+      icon: 'school-outline',
+      status: 'Completed',
+    },
   ];
 
   const filters: FilterType[] = ['All', 'ToDo', 'InProgress', 'Completed'];
 
+  const selectedDateLabel = useMemo(() => {
+    return formatDateForDisplay(new Date(selectedDate));
+  }, [selectedDate]);
+
   const filteredPlans = useMemo(() => {
-    if (selectedFilter === 'All') return plans;
-    return plans.filter((item) => item.status === selectedFilter);
-  }, [selectedFilter]);
+    const datePlans = plans.filter((item) => item.date === selectedDate);
+    if (selectedFilter === 'All') return datePlans;
+    return datePlans.filter((item) => item.status === selectedFilter);
+  }, [selectedDate, selectedFilter]);
+
+  const completionPercent = useMemo(() => {
+    const datePlans = plans.filter((item) => item.date === selectedDate);
+    if (datePlans.length === 0) return 0;
+    const completedCount = datePlans.filter(
+      (item) => item.status === 'Completed'
+    ).length;
+    return Math.round((completedCount / datePlans.length) * 100);
+  }, [selectedDate]);
+
+  const markedDates = useMemo(() => {
+    const marked: Record<string, any> = {};
+
+    plans.forEach((item) => {
+      marked[item.date] = {
+        ...(marked[item.date] || {}),
+        marked: true,
+        dotColor: '#C56FE8',
+      };
+    });
+
+    marked[selectedDate] = {
+      ...(marked[selectedDate] || {}),
+      selected: true,
+      selectedColor: '#DFA8F3',
+      marked: true,
+      dotColor: '#111',
+    };
+
+    return marked;
+  }, [plans, selectedDate]);
 
   const FilterChip = ({
     label,
@@ -65,15 +138,17 @@ export default function TodayPlanScreen() {
     onPress: () => void;
   }) => (
     <TouchableOpacity
-      style={[styles.filterChip, active && styles.activeFilterChip]}
+      activeOpacity={0.85}
       onPress={onPress}
-      activeOpacity={0.8}
+      style={[styles.filterChip, active && styles.activeFilterChip]}
     >
-      <Text style={[styles.filterText, active && styles.activeFilterText]}>{label}</Text>
+      <Text style={[styles.filterText, active && styles.activeFilterText]}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 
-  const getStatusStyle = (status: string) => {
+  const getStatusStyle = (status: PlanItem['status']) => {
     switch (status) {
       case 'ToDo':
         return styles.todoBadge;
@@ -86,7 +161,7 @@ export default function TodayPlanScreen() {
     }
   };
 
-  const getStatusTextStyle = (status: string) => {
+  const getStatusTextStyle = (status: PlanItem['status']) => {
     switch (status) {
       case 'ToDo':
         return styles.todoText;
@@ -99,40 +174,128 @@ export default function TodayPlanScreen() {
     }
   };
 
+  const openPicker = () => {
+    setShowPicker(true);
+  };
+
+  const onChangeDate = (_event: any, date?: Date) => {
+    if (Platform.OS !== 'ios') {
+      setShowPicker(false);
+    }
+    if (date) {
+      setSelectedDate(formatDateToISO(date));
+    }
+  };
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.topShape} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#111" />
+        <TouchableOpacity
+          style={styles.backBtn}
+          activeOpacity={0.8}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="chevron-back" size={28} color="#111" />
         </TouchableOpacity>
 
         <Text style={styles.title}>Today Plan</Text>
-        <Text style={styles.subtitle}>Manage your day with a simple planned schedule.</Text>
+        <Text style={styles.subtitle}>
+          Visualize your day like a calendar and stay on track.
+        </Text>
 
         <View style={styles.dateCard}>
           <View style={styles.dateIconWrap}>
             <Ionicons name="calendar-outline" size={20} color="#111" />
           </View>
 
-          <View>
-            <Text style={styles.dateLabel}>Today's Date</Text>
-            <Text style={styles.dateValue}>{todayDate}</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.dateLabel}>Selected Date</Text>
+            <Text style={styles.dateValue}>{selectedDateLabel}</Text>
+          </View>
+
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={openPicker}
+            style={styles.changeDateBtn}
+          >
+            <Text style={styles.changeDateBtnText}>Change Date</Text>
+          </TouchableOpacity>
+        </View>
+
+        {showPicker && (
+          <DateTimePicker
+            value={new Date(selectedDate)}
+            mode="date"
+            display="default"
+            onChange={onChangeDate}
+          />
+        )}
+
+        <View style={styles.highlightCard}>
+          <View style={styles.highlightTopRow}>
+            <View style={{ flex: 1, paddingRight: 16 }}>
+              <Text style={styles.highlightTitle}>Focus for Today</Text>
+              <Text style={styles.highlightText}>
+                Complete important tasks first, then continue practice and revision.
+              </Text>
+            </View>
+
+            <View style={styles.percentBadge}>
+              <Text style={styles.percentValue}>{completionPercent}%</Text>
+              <Text style={styles.percentLabel}>done</Text>
+            </View>
+          </View>
+
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${Math.max(completionPercent, 6)}%` },
+              ]}
+            />
           </View>
         </View>
 
-        <View style={styles.highlightCard}>
-          <Text style={styles.highlightTitle}>Focus for Today</Text>
-          <Text style={styles.highlightText}>
-            Complete important tasks first, then continue practice and revision.
-          </Text>
+        <Text style={styles.sectionTitle}>Month Calendar</Text>
+
+        <View style={styles.calendarCard}>
+          <Calendar
+            current={selectedDate}
+            onDayPress={(day) => setSelectedDate(day.dateString)}
+            markedDates={markedDates}
+            enableSwipeMonths
+            theme={{
+              backgroundColor: '#FFFFFF',
+              calendarBackground: '#FFFFFF',
+              textSectionTitleColor: '#8B5E9E',
+              selectedDayBackgroundColor: '#DFA8F3',
+              selectedDayTextColor: '#111111',
+              todayTextColor: '#C56FE8',
+              dayTextColor: '#111111',
+              textDisabledColor: '#D8C9DD',
+              dotColor: '#C56FE8',
+              selectedDotColor: '#111111',
+              arrowColor: '#C56FE8',
+              monthTextColor: '#111111',
+              indicatorColor: '#C56FE8',
+              textDayFontWeight: '600',
+              textMonthFontWeight: '800',
+              textDayHeaderFontWeight: '700',
+              textDayFontSize: 14,
+              textMonthFontSize: 18,
+              textDayHeaderFontSize: 13,
+            }}
+            style={styles.calendar}
+          />
         </View>
 
         <Text style={styles.sectionTitle}>Task Status</Text>
+
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -148,31 +311,44 @@ export default function TodayPlanScreen() {
           ))}
         </ScrollView>
 
-        <Text style={styles.sectionTitle}>Your Schedule</Text>
+        <View style={styles.scheduleHeaderRow}>
+          <Text style={styles.sectionTitle}>Day Schedule</Text>
+          <Text style={styles.scheduleDateText}>{selectedDateLabel}</Text>
+        </View>
 
         {filteredPlans.map((item, index) => (
-          <View key={index} style={styles.planCard}>
-            <View style={styles.cardTopRow}>
-              <View style={styles.timePill}>
-                <Text style={styles.timeText}>{item.time}</Text>
-              </View>
-
-              <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
-                <Text style={[styles.statusBadgeText, getStatusTextStyle(item.status)]}>
-                  {item.status}
-                </Text>
-              </View>
+          <View key={`${item.title}-${index}`} style={styles.timelineRow}>
+            <View style={styles.timelineTimeWrap}>
+              <Text style={styles.timelineTime}>{item.time}</Text>
             </View>
 
-            <View style={styles.planRow}>
-              <View style={styles.iconBox}>
-                <Ionicons name={item.icon as any} size={20} color="#111" />
+            <View style={styles.timelineTrackWrap}>
+              <View style={styles.timelineDot} />
+              {index !== filteredPlans.length - 1 && (
+                <View style={styles.timelineLine} />
+              )}
+            </View>
+
+            <View style={styles.timelineCard}>
+              <View style={styles.cardTopRow}>
+                <View style={styles.iconBox}>
+                  <Ionicons name={item.icon} size={18} color="#111" />
+                </View>
+
+                <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
+                  <Text
+                    style={[
+                      styles.statusBadgeText,
+                      getStatusTextStyle(item.status),
+                    ]}
+                  >
+                    {item.status}
+                  </Text>
+                </View>
               </View>
 
-              <View style={styles.planTextWrap}>
-                <Text style={styles.planTitle}>{item.title}</Text>
-                <Text style={styles.planNote}>{item.note}</Text>
-              </View>
+              <Text style={styles.planTitle}>{item.title}</Text>
+              <Text style={styles.planNote}>{item.note}</Text>
             </View>
           </View>
         ))}
@@ -181,20 +357,39 @@ export default function TodayPlanScreen() {
           <View style={styles.emptyCard}>
             <Text style={styles.emptyTitle}>No tasks found</Text>
             <Text style={styles.emptyText}>
-              There are no tasks available in this status right now.
+              There are no tasks available for this date or status right now.
             </Text>
           </View>
         )}
 
         <TouchableOpacity
+          activeOpacity={0.9}
           style={styles.primaryBtn}
-          onPress={() => router.push('/add-task' as any)}
+          onPress={() => router.push('/(tabs)/home/add-task')}
         >
           <Text style={styles.primaryBtnText}>Add New Task</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
+}
+
+function formatDateToISO(date: Date) {
+  return date.toISOString().split('T')[0];
+}
+
+function getDateWithOffset(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return formatDateToISO(date);
+}
+
+function formatDateForDisplay(date: Date) {
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(date);
 }
 
 const styles = StyleSheet.create({
@@ -215,12 +410,12 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 64,
-    paddingBottom: 60,
+    paddingTop: 20,
+    paddingBottom: 120,
   },
   backBtn: {
     marginTop: 10,
-    marginBottom: 18,
+    marginBottom: 20,
     width: 30,
     zIndex: 2,
   },
@@ -237,7 +432,6 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginBottom: 20,
-    lineHeight: 20,
   },
   dateCard: {
     backgroundColor: '#fff',
@@ -268,11 +462,28 @@ const styles = StyleSheet.create({
     color: '#111',
     fontWeight: '700',
   },
+  changeDateBtn: {
+    backgroundColor: '#F9EDB8',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 18,
+  },
+  changeDateBtnText: {
+    color: '#111',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   highlightCard: {
     backgroundColor: '#F4CCFF',
     borderRadius: 24,
     padding: 18,
-    marginBottom: 22,
+    marginBottom: 20,
+  },
+  highlightTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
   },
   highlightTitle: {
     fontSize: 18,
@@ -285,11 +496,52 @@ const styles = StyleSheet.create({
     color: '#444',
     lineHeight: 20,
   },
+  percentBadge: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  percentValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#111',
+  },
+  percentLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  progressTrack: {
+    height: 10,
+    backgroundColor: '#F5E7FA',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#111',
+    borderRadius: 10,
+  },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 22,
     color: '#111',
     marginBottom: 12,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  calendarCard: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#E9D9EE',
+    borderRadius: 24,
+    padding: 10,
+    marginBottom: 20,
+  },
+  calendar: {
+    borderRadius: 18,
+    overflow: 'hidden',
   },
   filterRow: {
     paddingBottom: 14,
@@ -317,30 +569,74 @@ const styles = StyleSheet.create({
   activeFilterText: {
     fontWeight: '700',
   },
-  planCard: {
-    backgroundColor: '#fff',
+  scheduleHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 10,
+  },
+  scheduleDateText: {
+    fontSize: 13,
+    color: '#B05FD2',
+    fontWeight: '700',
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  timelineTimeWrap: {
+    width: 78,
+    paddingTop: 10,
+  },
+  timelineTime: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '700',
+  },
+  timelineTrackWrap: {
+    width: 26,
+    alignItems: 'center',
+    position: 'relative',
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#111',
+    marginTop: 14,
+    zIndex: 2,
+  },
+  timelineLine: {
+    position: 'absolute',
+    top: 28,
+    width: 2,
+    height: '100%',
+    backgroundColor: '#DDD6E3',
+  },
+  timelineCard: {
+    flex: 1,
+    backgroundColor: '#FCF7FD',
     borderRadius: 24,
     padding: 16,
-    marginBottom: 14,
     borderWidth: 1,
     borderColor: '#E9D9EE',
+    marginLeft: 6,
   },
   cardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 14,
   },
-  timePill: {
-    backgroundColor: '#F4CCFF',
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+  iconBox: {
+    width: 40,
+    height: 40,
     borderRadius: 20,
-  },
-  timeText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#111',
+    backgroundColor: '#F4CCFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -368,22 +664,6 @@ const styles = StyleSheet.create({
   },
   completedText: {
     color: '#15803D',
-  },
-  planRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  iconBox: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#F4CCFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  planTextWrap: {
-    flex: 1,
   },
   planTitle: {
     fontSize: 17,
@@ -416,7 +696,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   primaryBtn: {
-    height: 46,
+    height: 48,
     borderWidth: 1,
     borderColor: '#111',
     borderRadius: 24,
@@ -429,6 +709,6 @@ const styles = StyleSheet.create({
   primaryBtnText: {
     color: '#D094E8',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '700',
   },
 });

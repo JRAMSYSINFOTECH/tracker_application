@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   addBtn: {
     height: 58,
     borderRadius: 18,
-    backgroundColor: '#ef4d9b',
+    backgroundColor: '#e814ac',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
