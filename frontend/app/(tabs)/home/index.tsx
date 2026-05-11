@@ -127,11 +127,11 @@ export default function DashboardScreen() {
     const selectedTasks = tasks.filter((task) => task.dateKey === selectedDateKey);
     if (selectedFilter === 'all') return selectedTasks;
     return selectedTasks.filter((task) => task.status === selectedFilter);
-  }, [selectedFilter, selectedDateKey]);
+  }, [selectedFilter, selectedDateKey, tasks]);
 
   const selectedDateTasks = useMemo(() => {
     return tasks.filter((task) => task.dateKey === selectedDateKey);
-  }, [selectedDateKey]);
+  }, [selectedDateKey, tasks]);
 
   const monthGrid = useMemo(() => {
     const year = selectedDate.getFullYear();
@@ -188,7 +188,7 @@ export default function DashboardScreen() {
     }
 
     return cells;
-  }, [selectedDate, selectedDateKey, todayKey]);
+  }, [selectedDate, selectedDateKey, todayKey, tasks]);
 
   const formattedSelectedDate = useMemo(() => {
     return new Intl.DateTimeFormat('en-GB', {
@@ -417,7 +417,10 @@ export default function DashboardScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.filterChip, selectedFilter === 'completed' && styles.filterChipActive]}
+              style={[
+                styles.filterChip,
+                selectedFilter === 'completed' && styles.filterChipActive,
+              ]}
               onPress={() => setSelectedFilter('completed')}
             >
               <Text
@@ -770,7 +773,11 @@ export default function DashboardScreen() {
           setDrawerVisible(false);
         }}
       >
-        <Ionicons name={quickActionsVisible ? 'close' : 'sparkles-outline'} size={24} color="#fff" />
+        <Ionicons
+          name={quickActionsVisible ? 'close' : 'sparkles-outline'}
+          size={24}
+          color="#fff"
+        />
       </TouchableOpacity>
 
       <View style={styles.fabLabelWrap}>
