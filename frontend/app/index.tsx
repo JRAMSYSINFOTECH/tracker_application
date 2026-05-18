@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import TopCurve from '../constants/src/components/TopCurve';
+import { useAuth } from '../constants/src/context/AuthContext';
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
 
   return (
     <View style={styles.container}>
@@ -40,7 +42,13 @@ export default function WelcomeScreen() {
 
         <TouchableOpacity
           style={styles.button}
-          onPress={() => router.push('/login' as any)}
+          onPress={() => {
+            if (isAuthenticated) {
+              router.push('/(tabs)/home' as any);
+            } else {
+              router.push('/login' as any);
+            }
+          }}
         >
           <Text style={styles.buttonText}>Get Started</Text>
         </TouchableOpacity>

@@ -1,11 +1,18 @@
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { AuthProvider, useAuth } from '../constants/src/context/AuthContext';
 import { TaskProvider } from '../constants/src/context/TaskContext';
+import { useEffect } from 'react';
+import { registerForPushNotificationsAsync } from '../services/notificationService';
 
 function RootNavigator() {
-  const { loading } = useAuth();
+  const { loading, isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+  }, [loading]);
 
   if (loading) {
     return (
@@ -27,6 +34,11 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+  }, []);
+
   return (
     <AuthProvider>
       <TaskProvider>

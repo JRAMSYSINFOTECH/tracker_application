@@ -1,9 +1,15 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../constants/api';
 
 export type AuthResponse = {
   message: string;
   token: string;
-  userId: number;
+
+  user?: {
+    user_id: number;
+    name: string;
+    email: string;
+  };
 };
 
 export type SignupPayload = {
@@ -41,7 +47,9 @@ export type CreateTaskPayload = {
   deadline: string;
   estimated_minutes: number;
   importance_hint?: TaskImportance;
+  status?: TaskStatus;
 };
+
 
 export type UpdateTaskPayload = Partial<CreateTaskPayload> & {
   status?: TaskStatus;
@@ -149,7 +157,9 @@ export const apiRequest = async <T>(
     headers['Content-Type'] = 'application/json';
   }
 
-  const requestToken = options.token ?? authToken;
+  const storedToken = authToken || await AsyncStorage.getItem('token');
+
+  const requestToken = options.token ?? storedToken;
 
   if (requestToken) {
     headers.Authorization = `Bearer ${requestToken}`;

@@ -1,6 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
+import { useAuth } from '../../../constants/src/context/AuthContext';
+import { useTaskContext } from '../../../constants/src/context/TaskContext';
+
 import {
   Image,
   Modal,
@@ -16,71 +19,54 @@ const PROFILE_IMAGE = '';
 
 type TaskStatus = 'pending' | 'completed';
 
-type Task = {
-  id: string;
+type DashboardTask = {
+  id: number;
   title: string;
   time: string;
   status: TaskStatus;
   dateKey: string;
 };
 
+
 export default function DashboardScreen() {
   const router = useRouter();
+  const { user, logout } = useAuth();
+  const { tasks: contextTasks } = useTaskContext();
 
   const [selectedFilter, setSelectedFilter] = useState<'all' | TaskStatus>('all');
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [monthModalVisible, setMonthModalVisible] = useState(false);
   const [quickActionsVisible, setQuickActionsVisible] = useState(false);
 
-  const USER_NAME = 'Boddu Vyshnavi';
+  const USER_NAME = user?.name || 'User';
 
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const formattedTasks: DashboardTask[] = contextTasks.map(
+    (task) => {
 
-  const tasks: Task[] = [
-    {
-      id: '1',
-      title: 'Lunch Date',
-      time: '12:00 PM',
-      status: 'pending',
-      dateKey: formatDateKey(new Date()),
-    },
-    {
-      id: '2',
-      title: 'Interview',
-      time: '02:00 PM',
-      status: 'completed',
-      dateKey: formatDateKey(new Date()),
-    },
-    {
-      id: '3',
-      title: 'React Native Practice',
-      time: '05:00 PM',
-      status: 'pending',
-      dateKey: formatDateKey(new Date()),
-    },
-    {
-      id: '4',
-      title: 'Project Discussion',
-      time: '11:00 AM',
-      status: 'pending',
-      dateKey: getDateWithOffset(1),
-    },
-    {
-      id: '5',
-      title: 'Design Review',
-      time: '03:30 PM',
-      status: 'completed',
-      dateKey: getDateWithOffset(1),
-    },
-    {
-      id: '6',
-      title: 'Push to GitHub',
-      time: '07:00 PM',
-      status: 'completed',
-      dateKey: getDateWithOffset(3),
-    },
-  ];
+      const taskDate = new Date(task.time);
+
+      // Map backend statuses to dashboard display statuses
+      const mappedStatus: TaskStatus =
+        task.status === 'completed' ? 'completed' : 'pending';
+
+      return {
+        id: task.id,
+
+        title: task.title,
+
+        time: taskDate.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+
+        status: mappedStatus,
+
+        dateKey: formatDateKey(taskDate),
+      };
+    }
+  );
 
   const navigateWithClose = (path: string) => {
     setDrawerVisible(false);
@@ -117,21 +103,21 @@ export default function DashboardScreen() {
     });
   }, [today, selectedDateKey]);
 
-  const pendingCount = tasks.filter((task) => task.status === 'pending').length;
-  const completedCount = tasks.filter((task) => task.status === 'completed').length;
-  const totalCount = tasks.length;
+  const pendingCount = formattedTasks.filter((task) => task.status === 'pending').length;
+  const completedCount = formattedTasks.filter((task) => task.status === 'completed').length;
+  const totalCount = formattedTasks.length;
   const progressPercent =
     totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
 
   const filteredTasks = useMemo(() => {
-    const selectedTasks = tasks.filter((task) => task.dateKey === selectedDateKey);
-    if (selectedFilter === 'all') return selectedTasks;
-    return selectedTasks.filter((task) => task.status === selectedFilter);
-  }, [selectedFilter, selectedDateKey, tasks]);
+    // Show ALL tasks, filtered only by status (not by date)
+    if (selectedFilter === 'all') return formattedTasks;
+    return formattedTasks.filter((task) => task.status === selectedFilter);
+  }, [selectedFilter, formattedTasks]);
 
   const selectedDateTasks = useMemo(() => {
-    return tasks.filter((task) => task.dateKey === selectedDateKey);
-  }, [selectedDateKey, tasks]);
+    return formattedTasks.filter((task) => task.dateKey === selectedDateKey);
+  }, [selectedDateKey, formattedTasks]);
 
   const monthGrid = useMemo(() => {
     const year = selectedDate.getFullYear();
@@ -158,7 +144,7 @@ export default function DashboardScreen() {
         currentMonth: false,
         isToday: formatDateKey(d) === todayKey,
         isSelected: formatDateKey(d) === selectedDateKey,
-        hasTasks: tasks.some((task) => task.dateKey === formatDateKey(d)),
+        hasTasks: formattedTasks.some( (task) => task.dateKey === formatDateKey(d) ),
       });
     }
 
@@ -170,7 +156,7 @@ export default function DashboardScreen() {
         currentMonth: true,
         isToday: formatDateKey(d) === todayKey,
         isSelected: formatDateKey(d) === selectedDateKey,
-        hasTasks: tasks.some((task) => task.dateKey === formatDateKey(d)),
+        hasTasks: formattedTasks.some((task) => task.dateKey === formatDateKey(d)),
       });
     }
 
@@ -183,12 +169,12 @@ export default function DashboardScreen() {
         currentMonth: false,
         isToday: formatDateKey(d) === todayKey,
         isSelected: formatDateKey(d) === selectedDateKey,
-        hasTasks: tasks.some((task) => task.dateKey === formatDateKey(d)),
+        hasTasks: formattedTasks.some((task) => task.dateKey === formatDateKey(d)),
       });
     }
 
     return cells;
-  }, [selectedDate, selectedDateKey, todayKey, tasks]);
+  }, [selectedDate, selectedDateKey, todayKey, formattedTasks]);
 
   const formattedSelectedDate = useMemo(() => {
     return new Intl.DateTimeFormat('en-GB', {
@@ -242,7 +228,17 @@ export default function DashboardScreen() {
       title: 'Settings',
       icon: 'settings-outline',
       active: false,
-      onPress: () => navigateWithClose('/(tabs)/explore'),
+      onPress: () => navigateWithClose('/(tabs)/home/settings'),
+    },
+    {
+      title: 'Logout',
+      icon: 'log-out-outline',
+      active: false,
+      onPress: async () => {
+        setDrawerVisible(false);
+        await logout();
+        router.replace('/login');
+      },
     },
   ];
 
