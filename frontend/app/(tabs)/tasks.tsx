@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTaskContext } from '../../constants/src/context/TaskContext';
 
 type FilterType = 'All' | 'ToDo' | 'InProgress' | 'Completed';
 
@@ -24,42 +25,33 @@ type TaskType = {
 
 export default function MyTasksScreen() {
   const router = useRouter();
+  const { tasks: contextTasks } = useTaskContext();
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('All');
   const [searchText, setSearchText] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const formattedTasks: TaskType[] = contextTasks.map((task) => {
+
+  const taskDate = new Date(task.time);
+
+  return {
+    id: task.id,
+
+    title: task.title,
+
+    note: 'Task from planner',
+
+    time: taskDate.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+
+    status:
+      task.status === 'completed'
+        ? 'Completed'
+        : 'ToDo',
+  };
+});
   const [openMenuTaskId, setOpenMenuTaskId] = useState<number | null>(null);
-
-  const [tasks, setTasks] = useState<TaskType[]>([
-    {
-      id: 1,
-      title: 'Morning Revision',
-      note: 'Revise Java concepts and notes.',
-      time: '07:00 AM',
-      status: 'ToDo',
-    },
-    {
-      id: 2,
-      title: 'Coding Practice',
-      note: 'Solve 3 DSA problems today.',
-      time: '10:00 AM',
-      status: 'InProgress',
-    },
-    {
-      id: 3,
-      title: 'Project Work',
-      note: 'Continue Kubernetes + Jenkins explanation.',
-      time: '02:00 PM',
-      status: 'ToDo',
-    },
-    {
-      id: 4,
-      title: 'Mock Test',
-      note: 'Take one aptitude or coding mock test.',
-      time: '06:00 PM',
-      status: 'Completed',
-    },
-  ]);
-
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -72,8 +64,8 @@ export default function MyTasksScreen() {
   const filteredTasks = useMemo(() => {
     let filtered =
       selectedFilter === 'All'
-        ? tasks
-        : tasks.filter((item) => item.status === selectedFilter);
+        ? formattedTasks
+        : formattedTasks.filter((item) => item.status === selectedFilter);
 
     if (searchText.trim()) {
       filtered = filtered.filter(
@@ -84,7 +76,7 @@ export default function MyTasksScreen() {
     }
 
     return filtered;
-  }, [selectedFilter, searchText, tasks]);
+  }, [selectedFilter, searchText, formattedTasks]);
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -118,7 +110,7 @@ export default function MyTasksScreen() {
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => setTasks((prev) => prev.filter((item) => item.id !== id)),
+        onPress: () => {},
       },
     ]);
   };
@@ -139,19 +131,7 @@ export default function MyTasksScreen() {
       return;
     }
 
-    setTasks((prev) =>
-      prev.map((item) =>
-        item.id === editingTaskId
-          ? {
-              ...item,
-              title: editTitle,
-              note: editNote,
-              time: editTime,
-              status: editStatus,
-            }
-          : item
-      )
-    );
+    console.log('Edit temporary disabled');
 
     setEditModalVisible(false);
   };
@@ -192,7 +172,7 @@ export default function MyTasksScreen() {
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => {
-                const task = tasks.find((t) => t.id === taskId);
+                const task = formattedTasks.find((t) => t.id === taskId);
                 if (task) openEditModal(task);
               }}
             >
@@ -247,7 +227,7 @@ export default function MyTasksScreen() {
               <Ionicons name="clipboard-outline" size={24} color="#E91E63" />
             </View>
             <View>
-              <Text style={styles.summaryNumber}>{tasks.length}</Text>
+              <Text style={styles.summaryNumber}>{formattedTasks.length}</Text>
               <Text style={styles.summaryLabel}>Total Tasks</Text>
             </View>
           </View>
@@ -258,7 +238,7 @@ export default function MyTasksScreen() {
             </View>
             <View>
               <Text style={styles.summaryNumber}>
-                {tasks.filter((item) => item.status === 'Completed').length}
+                {formattedTasks.filter((item) => item.status === 'Completed').length}
               </Text>
               <Text style={styles.summaryLabel}>Completed</Text>
             </View>

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
+import { useTaskContext } from '../../../constants/src/context/TaskContext';
 
 type FilterType = 'All' | 'ToDo' | 'InProgress' | 'Completed';
 
@@ -26,6 +27,7 @@ type PlanItem = {
 
 export default function TodayPlanScreen() {
   const router = useRouter();
+  const { tasks } = useTaskContext();
 
   const today = new Date();
   const todayIso = formatDateToISO(today);
@@ -34,56 +36,33 @@ export default function TodayPlanScreen() {
   const [selectedDate, setSelectedDate] = useState(todayIso);
   const [showPicker, setShowPicker] = useState(false);
 
-  const plans: PlanItem[] = [
-    {
-      date: todayIso,
-      time: '07:00 AM',
-      title: 'Morning Revision',
-      note: 'Revise Java concepts and formulas.',
-      icon: 'book-outline',
-      status: 'ToDo',
-    },
-    {
-      date: todayIso,
-      time: '10:00 AM',
-      title: 'Coding Practice',
-      note: 'Solve 3 DSA problems from arrays and strings.',
-      icon: 'code-slash-outline',
-      status: 'InProgress',
-    },
-    {
-      date: todayIso,
-      time: '02:00 PM',
-      title: 'Project Work',
-      note: 'Continue Kubernetes + Jenkins explanation.',
-      icon: 'laptop-outline',
-      status: 'ToDo',
-    },
-    {
-      date: todayIso,
-      time: '06:00 PM',
-      title: 'Mock Test',
-      note: 'Take one aptitude or coding mock test.',
-      icon: 'timer-outline',
-      status: 'Completed',
-    },
-    {
-      date: getDateWithOffset(1),
-      time: '09:00 AM',
-      title: 'Team Follow-up',
-      note: 'Discuss tracker updates and pending tasks.',
-      icon: 'people-outline',
-      status: 'ToDo',
-    },
-    {
-      date: getDateWithOffset(3),
-      time: '11:30 AM',
-      title: 'Interview Preparation',
-      note: 'Practice React Native and JavaScript questions.',
-      icon: 'school-outline',
-      status: 'Completed',
-    },
-  ];
+  const plans: PlanItem[] = tasks.map((task) => {
+
+    const taskDate = new Date(task.time);
+
+    return {
+      date: formatDateToISO(taskDate),
+
+      time: taskDate.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+
+      title: task.title,
+
+      note: 'Task from planner',
+
+      icon:
+        task.status === 'completed'
+          ? 'checkmark-circle-outline'
+          : 'clipboard-outline',
+
+      status:
+        task.status === 'completed'
+          ? 'Completed'
+          : 'ToDo',
+    };
+  });
 
   const filters: FilterType[] = ['All', 'ToDo', 'InProgress', 'Completed'];
 

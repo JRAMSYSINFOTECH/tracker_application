@@ -12,6 +12,8 @@ import {
   View,
 } from 'react-native';
 import { useTaskContext } from '../../../constants/src/context/TaskContext';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { scheduleTaskNotification } from '../../../services/notificationService';
 
 type RepeatType = 'Once' | 'Daily' | 'Weekly' | 'Custom';
 type PriorityType = 'High' | 'Medium' | 'Low';
@@ -31,21 +33,123 @@ export default function AddTaskScreen() {
   const [status, setStatus] = useState<StatusType>('To Do');
   const [reminder, setReminder] = useState(false);
 
-  const handleSave = () => {
-    if (!title.trim() || !deadline.trim() || !time.trim()) {
-      Alert.alert('Missing details', 'Please fill all required fields.');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const onChangeDate = (event: any, selected?: Date) => {
+    setShowDatePicker(false);
+
+    if (selected) {
+      setSelectedDate(selected);
+
+      const formattedDate = selected.toISOString().split('T')[0];
+      setDeadline(formattedDate);
+    }
+  };
+
+  const onChangeTime = (event: any, selected?: Date) => {
+    setShowTimePicker(false);
+
+    if (selected) {
+      setSelectedDate(selected);
+
+      const hours = selected.getHours();
+      const minutes = selected.getMinutes();
+
+      const formattedTime = `${hours % 12 || 12}:${minutes
+        .toString()
+        .padStart(2, '0')}`;
+
+      setTime(formattedTime);
+      setMeridiem(hours >= 12 ? 'PM' : 'AM');
+    }
+  };
+  const handleSave = async () => {
+
+    if (
+      !title.trim() ||
+      !deadline.trim() ||
+      !time.trim()
+    ) {
+
+      Alert.alert(
+        'Missing details',
+        'Please fill all required fields.'
+      );
+
       return;
     }
 
-    addTask({
-      title: title.trim(),
-      time: `${deadline.trim()} ${time.trim()} ${meridiem}`.trim(),
-      status: status === 'Completed' ? 'completed' : 'pending',
-    });
+    const [hours, minutes] =
+      time.split(':');
 
-    Alert.alert('Success', 'Task saved successfully');
-    router.back();
+    const finalDate =
+      new Date(deadline);
+
+    let finalHours =
+      Number(hours);
+
+    if (
+      meridiem === 'PM' &&
+      finalHours < 12
+    ) {
+      finalHours += 12;
+    }
+
+    if (
+      meridiem === 'AM' &&
+      finalHours === 12
+    ) {
+      finalHours = 0;
+    }
+
+    finalDate.setHours(finalHours);
+
+    finalDate.setMinutes(
+      Number(minutes)
+    );
+
+    // Map priority to backend importance_hint
+    const importanceMap: Record<string, 'low' | 'medium' | 'high'> = {
+      Low: 'low',
+      Medium: 'medium',
+      High: 'high',
+    };
+
+    // Map status to backend status
+    const statusMap: Record<string, 'pending' | 'in_progress' | 'completed'> = {
+      'To Do': 'pending',
+      'In Progress': 'in_progress',
+      'Completed': 'completed',
+    };
+
+    try {
+      await addTask({
+        title: title.trim(),
+        description: note.trim() || undefined,
+        deadline: finalDate.toISOString(),
+        estimated_minutes: 60,
+        importance_hint: importanceMap[priority],
+        status: statusMap[status],
+      });
+
+      if (reminder) {
+        await scheduleTaskNotification(
+          'Task Reminder',
+          `${title} deadline reached!`,
+          finalDate
+        );
+      }
+
+      Alert.alert('Success', 'Task saved successfully!');
+      router.back();
+    } catch (error: any) {
+      Alert.alert('Error', error?.message || 'Failed to save task. Please try again.');
+    }
   };
+
+
 
   const Chip = ({
     label,
@@ -113,48 +217,90 @@ export default function AddTaskScreen() {
           <View style={styles.deadlineRow}>
             <View style={styles.deadlineBlock}>
               <Text style={styles.fieldLabel}>Date</Text>
-              <View style={styles.inputWithIcon}>
-                <TextInput
-                  style={styles.inlineInput}
-                  value={deadline}
-                  onChangeText={setDeadline}
-                  placeholder="Select date"
-                  placeholderTextColor="#7A6D80"
+
+              <TouchableOpacity
+                style={styles.inputWithIcon}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Text style={styles.inlineInput}>
+                  {deadline || 'Select date'}
+                </Text>
+
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color="#df5ca8"
                 />
-                <Ionicons name="calendar-outline" size={20} color="#df5ca8" />
-              </View>
+              </TouchableOpacity>
             </View>
 
             <View style={styles.deadlineBlock}>
               <Text style={styles.fieldLabel}>Time</Text>
-              <View style={styles.inputWithIcon}>
-                <TextInput
-                  style={styles.inlineInput}
-                  value={time}
-                  onChangeText={setTime}
-                  placeholder="Select time"
-                  placeholderTextColor="#7A6D80"
+
+              <TouchableOpacity
+                style={styles.inputWithIcon}
+                onPress={() => setShowTimePicker(true)}
+              >
+                <Text style={styles.inlineInput}>
+                  {time || 'Select time'}
+                </Text>
+
+                <Ionicons
+                  name="time-outline"
+                  size={20}
+                  color="#df5ca8"
                 />
-                <Ionicons name="time-outline" size={20} color="#df5ca8" />
-              </View>
+              </TouchableOpacity>
             </View>
           </View>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="date"
+              display="default"
+              onChange={onChangeDate}
+            />
+          )}
+
+          {showTimePicker && (
+            <DateTimePicker
+              value={selectedDate}
+              mode="time"
+              display="default"
+              onChange={onChangeTime}
+            />
+          )}
 
           <View style={styles.amPmRow}>
             <Chip
               label="AM"
               selected={meridiem === 'AM'}
               onPress={() => setMeridiem('AM')}
-              icon={<Ionicons name="sunny-outline" size={18} color={meridiem === 'AM' ? '#df5ca8' : '#666'} />}
+              icon={
+                <Ionicons
+                  name="sunny-outline"
+                  size={18}
+                  color={meridiem === 'AM' ? '#df5ca8' : '#666'}
+                />
+              }
             />
+
             <Chip
               label="PM"
               selected={meridiem === 'PM'}
               onPress={() => setMeridiem('PM')}
-              icon={<Ionicons name="moon-outline" size={18} color={meridiem === 'PM' ? '#df5ca8' : '#666'} />}
+              icon={
+                <Ionicons
+                  name="moon-outline"
+                  size={18}
+                  color={meridiem === 'PM' ? '#df5ca8' : '#666'}
+                />
+              }
             />
           </View>
         </View>
+
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -412,6 +558,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#111',
     fontSize: 15,
+    paddingVertical: 10,
   },
   amPmRow: {
     flexDirection: 'row',

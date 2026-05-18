@@ -1,26 +1,27 @@
 import Constants from 'expo-constants';
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 const isExpoGo =
   Constants.appOwnership === 'expo' ||
   Constants.executionEnvironment === 'storeClient';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowList: true,
-  }),
-});
-
 export async function setupNotifications() {
+  if (isExpoGo) {
+    console.log('Notifications setup skipped in Expo Go');
+    return false;
+  }
+  
   try {
-    if (Platform.OS === 'android' && isExpoGo) {
-      console.log('Notifications setup skipped in Expo Go on Android');
-      return false;
-    }
+    const Notifications = require('expo-notifications');
+    
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+        shouldShowList: true,
+      }),
+    });
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
@@ -50,12 +51,14 @@ export async function setupNotifications() {
 }
 
 export async function scheduleTaskNotification(taskTitle: string) {
-  try {
-    if (Platform.OS === 'android' && isExpoGo) {
-      console.log('Notification scheduling skipped in Expo Go on Android');
-      return false;
-    }
+  if (isExpoGo) {
+    console.log('Notification scheduling skipped in Expo Go');
+    return false;
+  }
 
+  try {
+    const Notifications = require('expo-notifications');
+    
     await Notifications.scheduleNotificationAsync({
       content: {
         title: 'Task Reminder',
