@@ -29,11 +29,11 @@ export const createTask = async (req, res) => {
   try {
     const {
       title,
-      description,
       deadline,
       estimated_minutes,
-      importance_hint
+      status
     } = req.body;
+
 
     if (!title || !deadline) {
       return res.status(400).json({
@@ -53,16 +53,15 @@ export const createTask = async (req, res) => {
         message: "Estimated time must be positive"
       });
     }
-
+    const user_id = req.user.user_id;
     const task = await prisma.task.create({
       data: {
-        user_id: userId,
+        user_id,
         title,
-        description,
-        deadline: new Date(deadline),
+        deadline,
         estimated_minutes,
-        importance_hint
-      }
+        status,
+      },
     });
 
     await markPlanAsStale(userId);
