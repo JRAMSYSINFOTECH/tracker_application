@@ -20,9 +20,10 @@ model User {
   phone          String?      @unique
   profile_pic    String?      // store image URL/path
   created_at     DateTime @default(now())
-   googleId  String? @unique
+   googleId      String? @unique
   tasks          Task[]
   daily_plans    DailyPlan[]
+  fixedEvents    FixedEvent[]
 }
 
 model Task {
@@ -93,6 +94,20 @@ model Reminder {
   is_active   Boolean   @default(true)
 
   task Task @relation(fields: [task_id], references: [task_id])
+}
+
+model FixedEvent {
+  event_id     Int      @id @default(autoincrement())
+  user_id      Int
+  title        String
+  description  String?
+  start_time   DateTime
+  end_time     DateTime
+  event_type   String   @default("meeting")
+
+  user User @relation(fields: [user_id], references: [user_id])
+
+  created_at DateTime @default(now())
 }
 
 enum Importance {

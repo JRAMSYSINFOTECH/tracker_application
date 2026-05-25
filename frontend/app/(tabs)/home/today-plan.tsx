@@ -1,693 +1,417 @@
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+
 import {
-  Platform,
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Calendar } from 'react-native-calendars';
-import { useTaskContext } from '../../../constants/src/context/TaskContext';
 
-type FilterType = 'All' | 'ToDo' | 'InProgress' | 'Completed';
+import TopCurve from '../../../constants/src/components/TopCurve';
+import { commonStyles } from '../../../constants/src/theme/commonStyles';
 
-type PlanItem = {
-  date: string;
-  time: string;
-  title: string;
-  note: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  status: Exclude<FilterType, 'All'>;
-};
+import { dashboardApi } from '../../../services/api';
 
 export default function TodayPlanScreen() {
+
   const router = useRouter();
-  const { tasks } = useTaskContext();
 
-  const today = new Date();
-  const todayIso = formatDateToISO(today);
+  // =========================================
+  // GENERATE AI PLAN
+  // =========================================
 
-  const [selectedFilter, setSelectedFilter] = useState<FilterType>('All');
-  const [selectedDate, setSelectedDate] = useState(todayIso);
-  const [showPicker, setShowPicker] = useState(false);
+  const generateAIPlan = async () => {
 
-  const plans: PlanItem[] = tasks.map((task) => {
+    try {
 
-    const taskDate = new Date(task.time);
+      console.log('Generating AI Plan...');
 
-    return {
-      date: formatDateToISO(taskDate),
+      const response =
+        await dashboardApi.generatePlan();
 
-      time: taskDate.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
+      console.log(
+        'AI PLAN RESPONSE:',
+        response
+      );
 
-      title: task.title,
+      Alert.alert(
+        'Success',
+        'AI Plan Generated Successfully'
+      );
 
-      note: 'Task from planner',
+    } catch (error) {
 
-      icon:
-        task.status === 'completed'
-          ? 'checkmark-circle-outline'
-          : 'clipboard-outline',
+      console.log(
+        'AI PLAN ERROR:',
+        error
+      );
 
-      status:
-        task.status === 'completed'
-          ? 'Completed'
-          : 'ToDo',
-    };
-  });
-
-  const filters: FilterType[] = ['All', 'ToDo', 'InProgress', 'Completed'];
-
-  const selectedDateLabel = useMemo(() => {
-    return formatDateForDisplay(new Date(selectedDate));
-  }, [selectedDate]);
-
-  const filteredPlans = useMemo(() => {
-    const datePlans = plans.filter((item) => item.date === selectedDate);
-    if (selectedFilter === 'All') return datePlans;
-    return datePlans.filter((item) => item.status === selectedFilter);
-  }, [selectedDate, selectedFilter]);
-
-  const completionPercent = useMemo(() => {
-    const datePlans = plans.filter((item) => item.date === selectedDate);
-    if (datePlans.length === 0) return 0;
-    const completedCount = datePlans.filter(
-      (item) => item.status === 'Completed'
-    ).length;
-    return Math.round((completedCount / datePlans.length) * 100);
-  }, [selectedDate]);
-
-  const markedDates = useMemo(() => {
-    const marked: Record<string, any> = {};
-
-    plans.forEach((item) => {
-      marked[item.date] = {
-        ...(marked[item.date] || {}),
-        marked: true,
-        dotColor: '#C56FE8',
-      };
-    });
-
-    marked[selectedDate] = {
-      ...(marked[selectedDate] || {}),
-      selected: true,
-      selectedColor: '#DFA8F3',
-      marked: true,
-      dotColor: '#111',
-    };
-
-    return marked;
-  }, [plans, selectedDate]);
-
-  const FilterChip = ({
-    label,
-    active,
-    onPress,
-  }: {
-    label: FilterType;
-    active: boolean;
-    onPress: () => void;
-  }) => (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={onPress}
-      style={[styles.filterChip, active && styles.activeFilterChip]}
-    >
-      <Text style={[styles.filterText, active && styles.activeFilterText]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-
-  const getStatusStyle = (status: PlanItem['status']) => {
-    switch (status) {
-      case 'ToDo':
-        return styles.todoBadge;
-      case 'InProgress':
-        return styles.progressBadge;
-      case 'Completed':
-        return styles.completedBadge;
-      default:
-        return styles.todoBadge;
+      Alert.alert(
+        'Error',
+        'Failed to generate AI plan'
+      );
     }
   };
 
-  const getStatusTextStyle = (status: PlanItem['status']) => {
-    switch (status) {
-      case 'ToDo':
-        return styles.todoText;
-      case 'InProgress':
-        return styles.progressText;
-      case 'Completed':
-        return styles.completedText;
-      default:
-        return styles.todoText;
-    }
-  };
+  // =========================================
+  // QUICK ACTIONS
+  // =========================================
 
-  const openPicker = () => {
-    setShowPicker(true);
-  };
+  const quickActions = [
 
-  const onChangeDate = (_event: any, date?: Date) => {
-    if (Platform.OS !== 'ios') {
-      setShowPicker(false);
-    }
-    if (date) {
-      setSelectedDate(formatDateToISO(date));
-    }
-  };
+    {
+      title: 'Add Task',
+      icon: 'add-circle-outline',
+
+      onPress: () =>
+        router.push('/(tabs)/home/add-task'),
+    },
+
+    {
+      title: 'Tasks',
+      icon: 'list-outline',
+
+      onPress: () =>
+        router.push('/(tabs)/tasks'),
+    },
+
+    {
+      title: 'Explore',
+      icon: 'compass-outline',
+
+      onPress: () =>
+        router.push('/(tabs)/explore'),
+    },
+  ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <View style={styles.topShape} />
+
+    <View style={commonStyles.screen}>
+
+      <TopCurve />
 
       <ScrollView
-        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        <TouchableOpacity
-          style={styles.backBtn}
-          activeOpacity={0.8}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={28} color="#111" />
-        </TouchableOpacity>
 
-        <Text style={styles.title}>Today Plan</Text>
-        <Text style={styles.subtitle}>
-          Visualize your day like a calendar and stay on track.
-        </Text>
+        {/* HEADER */}
 
-        <View style={styles.dateCard}>
-          <View style={styles.dateIconWrap}>
-            <Ionicons name="calendar-outline" size={20} color="#111" />
+        <View style={styles.headerRow}>
+
+          <View>
+
+            <Text style={styles.hello}>
+              Hi, Bhavya 👋
+            </Text>
+
+            <Text style={styles.subText}>
+              Let’s plan your day smartly
+            </Text>
+
           </View>
 
-          <View style={{ flex: 1 }}>
-            <Text style={styles.dateLabel}>Selected Date</Text>
-            <Text style={styles.dateValue}>{selectedDateLabel}</Text>
+          <View style={styles.avatar}>
+
+            <Ionicons
+              name="person-outline"
+              size={24}
+              color="#111"
+            />
+
           </View>
+
+        </View>
+
+        {/* MAIN CARD */}
+
+        <View style={styles.mainCard}>
+
+          <Text style={styles.cardTitle}>
+            AI Scheduler
+          </Text>
+
+          <Text style={styles.cardText}>
+            Generate your AI powered schedule
+            based on your tasks, priorities,
+            deadlines and productivity goals.
+          </Text>
+
+          {/* FIXED BUTTON */}
 
           <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={openPicker}
-            style={styles.changeDateBtn}
+            style={styles.primaryButton}
+            onPress={generateAIPlan}
           >
-            <Text style={styles.changeDateBtnText}>Change Date</Text>
+
+            <Text style={styles.primaryButtonText}>
+              Generate AI Plan
+            </Text>
+
           </TouchableOpacity>
+
         </View>
 
-        {showPicker && (
-          <DateTimePicker
-            value={new Date(selectedDate)}
-            mode="date"
-            display="default"
-            onChange={onChangeDate}
-          />
-        )}
+        {/* QUICK ACTIONS */}
 
-        <View style={styles.highlightCard}>
-          <View style={styles.highlightTopRow}>
-            <View style={{ flex: 1, paddingRight: 16 }}>
-              <Text style={styles.highlightTitle}>Focus for Today</Text>
-              <Text style={styles.highlightText}>
-                Complete important tasks first, then continue practice and revision.
-              </Text>
-            </View>
+        <Text style={styles.sectionTitle}>
+          Quick Actions
+        </Text>
 
-            <View style={styles.percentBadge}>
-              <Text style={styles.percentValue}>{completionPercent}%</Text>
-              <Text style={styles.percentLabel}>done</Text>
-            </View>
-          </View>
+        <View style={styles.grid}>
 
-          <View style={styles.progressTrack}>
-            <View
-              style={[
-                styles.progressFill,
-                { width: `${Math.max(completionPercent, 6)}%` },
-              ]}
-            />
-          </View>
-        </View>
+          {quickActions.map((item, index) => (
 
-        <Text style={styles.sectionTitle}>Month Calendar</Text>
+            <TouchableOpacity
+              key={index}
+              style={styles.gridCard}
+              activeOpacity={0.8}
+              onPress={item.onPress}
+            >
 
-        <View style={styles.calendarCard}>
-          <Calendar
-            current={selectedDate}
-            onDayPress={(day) => setSelectedDate(day.dateString)}
-            markedDates={markedDates}
-            enableSwipeMonths
-            theme={{
-              backgroundColor: '#FFFFFF',
-              calendarBackground: '#FFFFFF',
-              textSectionTitleColor: '#8B5E9E',
-              selectedDayBackgroundColor: '#DFA8F3',
-              selectedDayTextColor: '#111111',
-              todayTextColor: '#C56FE8',
-              dayTextColor: '#111111',
-              textDisabledColor: '#D8C9DD',
-              dotColor: '#C56FE8',
-              selectedDotColor: '#111111',
-              arrowColor: '#C56FE8',
-              monthTextColor: '#111111',
-              indicatorColor: '#C56FE8',
-              textDayFontWeight: '600',
-              textMonthFontWeight: '800',
-              textDayHeaderFontWeight: '700',
-              textDayFontSize: 14,
-              textMonthFontSize: 18,
-              textDayHeaderFontSize: 13,
-            }}
-            style={styles.calendar}
-          />
-        </View>
+              <View style={styles.iconWrap}>
 
-        <Text style={styles.sectionTitle}>Task Status</Text>
+                <Ionicons
+                  name={item.icon as any}
+                  size={26}
+                  color="#d14df0"
+                />
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow}
-        >
-          {filters.map((item) => (
-            <FilterChip
-              key={item}
-              label={item}
-              active={selectedFilter === item}
-              onPress={() => setSelectedFilter(item)}
-            />
-          ))}
-        </ScrollView>
-
-        <View style={styles.scheduleHeaderRow}>
-          <Text style={styles.sectionTitle}>Day Schedule</Text>
-          <Text style={styles.scheduleDateText}>{selectedDateLabel}</Text>
-        </View>
-
-        {filteredPlans.map((item, index) => (
-          <View key={`${item.title}-${index}`} style={styles.timelineRow}>
-            <View style={styles.timelineTimeWrap}>
-              <Text style={styles.timelineTime}>{item.time}</Text>
-            </View>
-
-            <View style={styles.timelineTrackWrap}>
-              <View style={styles.timelineDot} />
-              {index !== filteredPlans.length - 1 && (
-                <View style={styles.timelineLine} />
-              )}
-            </View>
-
-            <View style={styles.timelineCard}>
-              <View style={styles.cardTopRow}>
-                <View style={styles.iconBox}>
-                  <Ionicons name={item.icon} size={18} color="#111" />
-                </View>
-
-                <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
-                  <Text
-                    style={[
-                      styles.statusBadgeText,
-                      getStatusTextStyle(item.status),
-                    ]}
-                  >
-                    {item.status}
-                  </Text>
-                </View>
               </View>
 
-              <Text style={styles.planTitle}>{item.title}</Text>
-              <Text style={styles.planNote}>{item.note}</Text>
-            </View>
-          </View>
-        ))}
+              <Text style={styles.gridText}>
+                {item.title}
+              </Text>
 
-        {filteredPlans.length === 0 && (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No tasks found</Text>
-            <Text style={styles.emptyText}>
-              There are no tasks available for this date or status right now.
+            </TouchableOpacity>
+
+          ))}
+
+        </View>
+
+        {/* OVERVIEW */}
+
+        <Text style={styles.sectionTitle}>
+          AI Scheduler Features
+        </Text>
+
+        <View style={styles.statsRow}>
+
+          <View style={styles.statCard}>
+
+            <Text style={styles.statNumber}>
+              AI
             </Text>
+
+            <Text style={styles.statLabel}>
+              Smart Scheduling
+            </Text>
+
           </View>
-        )}
 
-        <TouchableOpacity
-          activeOpacity={0.9}
-          style={styles.primaryBtn}
-          onPress={() => router.push('/(tabs)/home/add-task')}
-        >
-          <Text style={styles.primaryBtnText}>Add New Task</Text>
-        </TouchableOpacity>
+          <View style={styles.statCard}>
+
+            <Text style={styles.statNumber}>
+              ⚡
+            </Text>
+
+            <Text style={styles.statLabel}>
+              Priority Handling
+            </Text>
+
+          </View>
+
+        </View>
+
+        {/* TIP */}
+
+        <View style={styles.tipCard}>
+
+          <Text style={styles.tipTitle}>
+            Productivity Tip
+          </Text>
+
+          <Text style={styles.tipText}>
+            High priority tasks and closer deadlines
+            are automatically scheduled first
+            by the AI scheduler.
+          </Text>
+
+        </View>
+
       </ScrollView>
-    </SafeAreaView>
+
+    </View>
   );
-}
-
-function formatDateToISO(date: Date) {
-  return date.toISOString().split('T')[0];
-}
-
-function getDateWithOffset(days: number) {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return formatDateToISO(date);
-}
-
-function formatDateForDisplay(date: Date) {
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  }).format(date);
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  topShape: {
-    position: 'absolute',
-    top: -35,
-    alignSelf: 'center',
-    width: 190,
-    height: 150,
-    backgroundColor: '#F4CCFF',
-    borderBottomLeftRadius: 95,
-    borderBottomRightRadius: 95,
-    zIndex: 0,
-  },
+
   scrollContent: {
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 95,
     paddingBottom: 120,
   },
-  backBtn: {
-    marginTop: 10,
-    marginBottom: 20,
-    width: 30,
-    zIndex: 2,
+
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 28,
   },
-  title: {
+
+  hello: {
     fontSize: 28,
     fontWeight: '800',
     color: '#111',
-    textAlign: 'center',
-    marginBottom: 6,
-    marginTop: 10,
+    marginBottom: 4,
   },
-  subtitle: {
-    fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
+
+  subText: {
+    fontSize: 15,
+    color: '#555',
   },
-  dateCard: {
-    backgroundColor: '#fff',
+
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#f3f3f3',
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E9D9EE',
+    borderColor: '#e4e4e4',
+  },
+
+  mainCard: {
+    backgroundColor: '#f7d0fb',
     borderRadius: 24,
-    padding: 16,
-    marginBottom: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
+    padding: 22,
+    marginBottom: 28,
   },
-  dateIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#F4CCFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  dateLabel: {
-    fontSize: 13,
-    color: '#777',
-    marginBottom: 2,
-  },
-  dateValue: {
-    fontSize: 16,
-    color: '#111',
-    fontWeight: '700',
-  },
-  changeDateBtn: {
-    backgroundColor: '#F9EDB8',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
-  },
-  changeDateBtnText: {
-    color: '#111',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  highlightCard: {
-    backgroundColor: '#F4CCFF',
-    borderRadius: 24,
-    padding: 18,
-    marginBottom: 20,
-  },
-  highlightTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-  highlightTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111',
-    marginBottom: 6,
-  },
-  highlightText: {
-    fontSize: 14,
-    color: '#444',
-    lineHeight: 20,
-  },
-  percentBadge: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  percentValue: {
+
+  cardTitle: {
     fontSize: 22,
     fontWeight: '800',
     color: '#111',
+    marginBottom: 8,
   },
-  percentLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
+
+  cardText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#333',
+    marginBottom: 18,
   },
-  progressTrack: {
-    height: 10,
-    backgroundColor: '#F5E7FA',
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
+
+  primaryButton: {
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#111',
-    borderRadius: 10,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    color: '#111',
-    marginBottom: 12,
-    fontWeight: '700',
-  },
-  calendarCard: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#E9D9EE',
-    borderRadius: 24,
-    padding: 10,
-    marginBottom: 20,
-  },
-  calendar: {
-    borderRadius: 18,
-    overflow: 'hidden',
-  },
-  filterRow: {
-    paddingBottom: 14,
-    gap: 10,
-  },
-  filterChip: {
-    paddingHorizontal: 16,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: 1,
-    borderColor: '#111',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
   },
-  activeFilterChip: {
-    backgroundColor: '#F4CCFF',
-    borderColor: '#111',
-  },
-  filterText: {
-    fontSize: 14,
-    color: '#111',
-    fontWeight: '500',
-  },
-  activeFilterText: {
+
+  primaryButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: '700',
   },
-  scheduleHeaderRow: {
+
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#111',
+    marginBottom: 14,
+  },
+
+  grid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
+    marginBottom: 28,
+  },
+
+  gridCard: {
+    width: '48%',
+    backgroundColor: '#fff',
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: '#ececec',
+    paddingVertical: 22,
+    paddingHorizontal: 14,
     alignItems: 'center',
-    marginTop: 4,
+    marginBottom: 14,
+  },
+
+  iconWrap: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: '#fdeaff',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 10,
   },
-  scheduleDateText: {
-    fontSize: 13,
-    color: '#B05FD2',
+
+  gridText: {
+    fontSize: 15,
     fontWeight: '700',
+    color: '#111',
   },
-  timelineRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-  timelineTimeWrap: {
-    width: 78,
-    paddingTop: 10,
-  },
-  timelineTime: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '700',
-  },
-  timelineTrackWrap: {
-    width: 26,
-    alignItems: 'center',
-    position: 'relative',
-  },
-  timelineDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#111',
-    marginTop: 14,
-    zIndex: 2,
-  },
-  timelineLine: {
-    position: 'absolute',
-    top: 28,
-    width: 2,
-    height: '100%',
-    backgroundColor: '#DDD6E3',
-  },
-  timelineCard: {
-    flex: 1,
-    backgroundColor: '#FCF7FD',
-    borderRadius: 24,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#E9D9EE',
-    marginLeft: 6,
-  },
-  cardTopRow: {
+
+  statsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 22,
   },
-  iconBox: {
-    width: 40,
-    height: 40,
+
+  statCard: {
+    width: '48%',
+    backgroundColor: '#fff',
     borderRadius: 20,
-    backgroundColor: '#F4CCFF',
-    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#ececec',
+    paddingVertical: 24,
     alignItems: 'center',
   },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 18,
-  },
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  todoBadge: {
-    backgroundColor: '#FCE7F3',
-  },
-  todoText: {
-    color: '#C0266D',
-  },
-  progressBadge: {
-    backgroundColor: '#FEF3C7',
-  },
-  progressText: {
-    color: '#B45309',
-  },
-  completedBadge: {
-    backgroundColor: '#DCFCE7',
-  },
-  completedText: {
-    color: '#15803D',
-  },
-  planTitle: {
-    fontSize: 17,
-    fontWeight: '700',
+
+  statNumber: {
+    fontSize: 28,
+    fontWeight: '800',
     color: '#111',
     marginBottom: 6,
   },
-  planNote: {
-    fontSize: 14,
-    color: '#555',
-    lineHeight: 20,
-  },
-  emptyCard: {
-    backgroundColor: '#FAFAFA',
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#ECECEC',
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111',
-    marginBottom: 4,
-  },
-  emptyText: {
+
+  statLabel: {
     fontSize: 14,
     color: '#666',
-    lineHeight: 20,
+    fontWeight: '600',
+    textAlign: 'center',
   },
-  primaryBtn: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#111',
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
+
+  tipCard: {
     backgroundColor: '#fff',
+    borderWidth: 1.5,
+    borderColor: '#ececec',
+    borderRadius: 20,
+    padding: 20,
   },
-  primaryBtnText: {
-    color: '#D094E8',
-    fontSize: 16,
-    fontWeight: '700',
+
+  tipTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#111',
+    marginBottom: 8,
   },
+
+  tipText: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: '#555',
+  },
+
 });

@@ -222,7 +222,7 @@ export default function DashboardScreen() {
       title: 'AI Planner',
       icon: 'sparkles-outline',
       active: false,
-      onPress: () => navigateWithClose('/(tabs)/home/ai-scheduler'),
+      onPress: () => navigateWithClose('/(tabs)/home/today-plan'),
     },
     {
       title: 'Settings',
@@ -375,7 +375,7 @@ export default function DashboardScreen() {
               <TouchableOpacity
                 style={styles.aiTaskPill}
                 activeOpacity={0.85}
-                onPress={() => navigateWithClose('/(tabs)/home/ai-scheduler')}
+                onPress={() => navigateWithClose('/(tabs)/home/today-plan')}
               >
                 <Ionicons name="sparkles-outline" size={14} color="#111" />
                 <Text style={styles.aiTaskPillText}>Generate Plan</Text>
@@ -750,7 +750,7 @@ export default function DashboardScreen() {
             <TouchableOpacity
               style={styles.quickActionItem}
               activeOpacity={0.85}
-              onPress={() => navigateWithClose('/(tabs)/home/ai-scheduler')}
+              onPress={() => navigateWithClose('/(tabs)/home/today-plan')}
             >
               <View style={styles.quickActionIcon}>
                 <Ionicons name="sparkles-outline" size={18} color="#a14ccf" />

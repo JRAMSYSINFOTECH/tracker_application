@@ -17,7 +17,7 @@ export default function DashboardScreen() {
     {
       title: 'Today Plan',
       icon: 'calendar-outline',
-      onPress: () => router.push('/today-plan'),
+      onPress: () => router.push('/(tabs)/home/today-plan')
     },
     {
       title: 'Tasks',
@@ -58,7 +58,7 @@ export default function DashboardScreen() {
 
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={() => router.push('/today-plan')}
+            onPress={() => router.push('/(tabs)/home/today-plan')}
           >
             <Text style={styles.primaryButtonText}>Generate AI Plan</Text>
           </TouchableOpacity>

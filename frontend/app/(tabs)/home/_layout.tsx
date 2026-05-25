@@ -143,16 +143,6 @@ export default function HomeLayout() {
           ),
         }}
       />
-
-      <Drawer.Screen
-        name="ai-scheduler"
-        options={{
-          title: 'AI Planner',
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="sparkles-outline" size={size} color={color} />
-          ),
-        }}
-      />
       <Drawer.Screen
         name="settings"
         options={{
