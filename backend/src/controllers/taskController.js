@@ -40,9 +40,13 @@ export const createTask = async (req, res) => {
         message: "Title and deadline are required"
       });
     }
-
+    console.log("STATUS:", status);
+    console.log(req.body);
     // ✅ Deadline validation
-    if (new Date(deadline) < new Date()) {
+    if (
+      status !== "completed" &&
+      new Date(deadline) < new Date()
+    ) {
       return res.status(400).json({
         message: "Deadline cannot be in the past"
       });

@@ -77,7 +77,7 @@ export function AuthProvider({
 
       try {
 
-        // await AsyncStorage.clear();
+        await AsyncStorage.clear();
 
         const storedCurrentUser =
           await AsyncStorage.getItem(

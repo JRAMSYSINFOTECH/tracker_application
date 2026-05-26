@@ -25,32 +25,35 @@ type TaskType = {
 
 export default function MyTasksScreen() {
   const router = useRouter();
-  const { tasks: contextTasks } = useTaskContext();
+  const {
+    tasks: contextTasks,
+    updateTask,
+  } = useTaskContext();
   const [selectedFilter, setSelectedFilter] = useState<FilterType>('All');
   const [searchText, setSearchText] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const formattedTasks: TaskType[] = contextTasks.map((task) => {
 
-  const taskDate = new Date(task.time);
+    const taskDate = new Date(task.time);
 
-  return {
-    id: task.id,
+    return {
+      id: task.id,
 
-    title: task.title,
+      title: task.title,
 
-    note: 'Task from planner',
+      note: 'Task from planner',
 
-    time: taskDate.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    }),
+      time: taskDate.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
 
-    status:
-      task.status === 'completed'
-        ? 'Completed'
-        : 'ToDo',
-  };
-});
+      status:
+        task.status === 'completed'
+          ? 'Completed'
+          : 'ToDo',
+    };
+  });
   const [openMenuTaskId, setOpenMenuTaskId] = useState<number | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<number | null>(null);
@@ -110,7 +113,7 @@ export default function MyTasksScreen() {
       {
         text: 'Delete',
         style: 'destructive',
-        onPress: () => {},
+        onPress: () => { },
       },
     ]);
   };
@@ -125,15 +128,50 @@ export default function MyTasksScreen() {
     setOpenMenuTaskId(null);
   };
 
-  const handleSaveEdit = () => {
-    if (!editTitle.trim() || !editNote.trim() || !editTime.trim()) {
-      Alert.alert('Missing details', 'Please fill all edit fields.');
+  const handleSaveEdit = async () => {
+
+    if (
+      !editTitle.trim() ||
+      !editNote.trim() ||
+      !editTime.trim()
+    ) {
+      Alert.alert(
+        'Missing details',
+        'Please fill all edit fields.'
+      );
       return;
     }
 
-    console.log('Edit temporary disabled');
+    if (!editingTaskId) return;
 
-    setEditModalVisible(false);
+    try {
+
+      await updateTask(
+        editingTaskId,
+        {
+          title: editTitle,
+          description: editNote,
+          status:
+            editStatus === 'Completed'
+              ? 'completed'
+              : 'pending',
+        }
+      );
+
+      Alert.alert(
+        'Success',
+        'Task updated successfully'
+      );
+
+      setEditModalVisible(false);
+
+    } catch (error) {
+
+      Alert.alert(
+        'Error',
+        'Failed to update task'
+      );
+    }
   };
 
   const FilterChip = ({
@@ -212,7 +250,7 @@ export default function MyTasksScreen() {
 
           <TouchableOpacity
             style={styles.addIconBtn}
-            onPress={() => router.push('/add-task' as any)}
+            onPress={() => router.push('/(tabs)/home/add-task' as any)}
           >
             <Ionicons name="add" size={22} color="#E91E63" />
           </TouchableOpacity>
@@ -431,7 +469,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 24,
     paddingTop: 56,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
   topRow: {
     flexDirection: 'row',

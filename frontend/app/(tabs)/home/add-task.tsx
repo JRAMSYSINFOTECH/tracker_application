@@ -134,7 +134,11 @@ export default function AddTaskScreen() {
         status: statusMap[status],
       });
 
-      if (reminder) {
+      if (
+        reminder &&
+        status !== 'Completed' &&
+        finalDate > new Date()
+      ) {
         await scheduleTaskNotification(
           'Task Reminder',
           `${title} deadline reached!`,

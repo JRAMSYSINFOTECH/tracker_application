@@ -144,7 +144,7 @@ export default function DashboardScreen() {
         currentMonth: false,
         isToday: formatDateKey(d) === todayKey,
         isSelected: formatDateKey(d) === selectedDateKey,
-        hasTasks: formattedTasks.some( (task) => task.dateKey === formatDateKey(d) ),
+        hasTasks: formattedTasks.some((task) => task.dateKey === formatDateKey(d)),
       });
     }
 
@@ -222,7 +222,7 @@ export default function DashboardScreen() {
       title: 'AI Planner',
       icon: 'sparkles-outline',
       active: false,
-      onPress: () => navigateWithClose('/(tabs)/home/today-plan'),
+      onPress: () => navigateWithClose('/(tabs)/home/ai-Scheduler'),
     },
     {
       title: 'Settings',

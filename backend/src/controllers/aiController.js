@@ -250,6 +250,8 @@ export const generatePlan = async (req, res) => {
     const today = new Date();
 
     today.setHours(0, 0, 0, 0);
+    console.log("PRISMA TASK:", prisma.task);
+    console.log("PRISMA FIXED EVENT:", prisma.fixedEvent);
 
     // ================= TASKS =================
     const tasks = await prisma.task.findMany({

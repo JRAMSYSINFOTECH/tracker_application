@@ -25,6 +25,11 @@ type TaskContextType = {
   tasks: TaskItem[];
   loadTasks: () => Promise<void>;
   addTask: (payload: CreateTaskPayload) => Promise<void>;
+
+  updateTask: (
+    id: number,
+    updates: Partial<TaskItem>
+  ) => Promise<void>;
 };
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -93,9 +98,49 @@ export const TaskProvider = ({
       throw error; // re-throw so add-task screen can show error to user
     }
   };
+  const updateTask = async (
+    id: number,
+    updates: Partial<TaskItem>
+  ) => {
+
+    try {
+
+      await taskApi.update(
+        id,
+        updates
+      );
+
+      setTasks((prev) =>
+        prev.map((task) =>
+          task.id === id
+            ? {
+              ...task,
+              ...updates,
+            }
+            : task
+        )
+      );
+
+    } catch (error) {
+
+      console.log(
+        'Update task error:',
+        error
+      );
+
+      throw error;
+    }
+  };
 
   return (
-    <TaskContext.Provider value={{ tasks, loadTasks, addTask }}>
+    <TaskContext.Provider
+      value={{
+        tasks,
+        loadTasks,
+        addTask,
+        updateTask,
+      }}
+    >
       {children}
     </TaskContext.Provider>
   );

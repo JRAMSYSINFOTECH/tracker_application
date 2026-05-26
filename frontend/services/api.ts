@@ -89,6 +89,9 @@ export type TodayPlanItem = {
   task_id: number;
   slot_order: number;
   item_status: 'scheduled' | 'done' | 'skipped' | 'moved';
+  start_time: string;
+  end_time: string;
+  confidence_score: number;
   task: {
     title: string;
     deadline: string;
@@ -99,6 +102,13 @@ export type TodayPlanItem = {
 
 type GeneratePlanResponse = {
   message: string;
+  progress: number;
+  plan: {
+    plan_id: number;
+    plan_date: string;
+    status: string;
+    items: TodayPlanItem[];
+  };
 };
 
 type ApiRequestOptions = {
@@ -246,7 +256,7 @@ export const dashboardApi = {
   todayPlan: () => apiRequest<TodayPlanItem[]>('/api/dashboard/today-plan'),
   reminders: () => apiRequest<BackendReminder[]>('/api/dashboard/reminders'),
   generatePlan: () =>
-    apiRequest<GeneratePlanResponse>('/api/dashboard/generate-plan', {
+    apiRequest<GeneratePlanResponse>('/api/ai/generate-plan', {
       method: 'POST',
     }),
 };
