@@ -222,7 +222,7 @@ export default function DashboardScreen() {
       title: 'AI Planner',
       icon: 'sparkles-outline',
       active: false,
-      onPress: () => navigateWithClose('/(tabs)/home/ai-Scheduler'),
+      onPress: () => navigateWithClose('/(tabs)/home/AISchedulerScreen'),
     },
     {
       title: 'Settings',
