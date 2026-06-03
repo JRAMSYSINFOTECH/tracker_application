@@ -9,6 +9,7 @@ import {
   View,
   ScrollView,
   Switch,
+  Image,
 } from 'react-native';
 import { useAuth } from '../../../constants/src/context/AuthContext';
 
@@ -49,12 +50,23 @@ export default function SettingsScreen() {
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.profileCard}>
             <View style={styles.profileAvatar}>
-              <Text style={styles.avatarText}>{user?.name?.charAt(0)?.toUpperCase() || 'U'}</Text>
+              {user?.profile_pic ? (
+                <Image source={{ uri: user.profile_pic }} style={styles.avatarImage} />
+              ) : (
+                <Text style={styles.avatarText}>{user?.name?.charAt(0)?.toUpperCase() || 'U'}</Text>
+              )}
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{user?.name || 'User'}</Text>
               <Text style={styles.profileEmail}>{user?.email || 'email@example.com'}</Text>
             </View>
+            <TouchableOpacity 
+              style={styles.editProfileBtn} 
+              onPress={() => router.push('/(tabs)/home/edit-profile')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="create-outline" size={22} color="#a14ccf" />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -172,6 +184,7 @@ const styles = StyleSheet.create({
   },
   profileInfo: {
     marginLeft: 15,
+    flex: 1,
   },
   profileName: {
     fontSize: 18,
@@ -182,6 +195,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 2,
+  },
+  avatarImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  editProfileBtn: {
+    padding: 8,
   },
   item: {
     flexDirection: 'row',

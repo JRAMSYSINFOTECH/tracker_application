@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-
+import * as ImagePicker from 'expo-image-picker';
 import AppButton from '../constants/src/components/AppButton';
 import AppInput from '../constants/src/components/AppInput';
 import OrDivider from '../constants/src/components/OrDivider';
@@ -32,6 +32,19 @@ export default function SignupScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setProfileImage(result.assets[0].uri);
+    }
+  };
 
   if (loading) {
     return (
@@ -103,7 +116,8 @@ export default function SignupScreen() {
         normalizedName,
         normalizedEmail,
         normalizedPassword,
-        gender
+        gender,
+        profileImage
       );
 
       if (!result.success) {
@@ -150,9 +164,24 @@ export default function SignupScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.avatar}>
-          <Ionicons name="person-outline" size={34} color="#666" />
-        </View>
+        <TouchableOpacity
+          style={styles.avatar}
+          onPress={pickImage}
+          disabled={submitting}
+        >
+          {profileImage ? (
+            <Image
+              source={{ uri: profileImage }}
+              style={{
+                width: 88,
+                height: 88,
+                borderRadius: 44,
+              }}
+            />
+          ) : (
+            <Ionicons name="camera-outline" size={34} color="#666" />
+          )}
+        </TouchableOpacity>
 
         <View style={styles.genderRow}>
           {['F', 'M', 'O'].map((g) => (

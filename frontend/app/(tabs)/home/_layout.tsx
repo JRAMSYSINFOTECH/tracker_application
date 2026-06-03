@@ -6,12 +6,14 @@ import {
 } from '@react-navigation/drawer';
 import { Drawer } from 'expo-router/drawer';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-const USER_NAME = 'Vyshnavi';
-const PROFILE_IMAGE = '';
+import { useAuth } from '../../../constants/src/context/AuthContext';
 
 function CustomDrawerContent(props: any) {
-  const initials = USER_NAME.trim()
+  const { user } = useAuth();
+  const userName = user?.name || 'User';
+  const profileImage = user?.profile_pic || '';
+
+  const initials = userName.trim()
     .split(' ')
     .map((part) => part[0])
     .join('')
@@ -31,8 +33,8 @@ function CustomDrawerContent(props: any) {
           </TouchableOpacity>
 
           <View style={styles.profileRow}>
-            {PROFILE_IMAGE ? (
-              <Image source={{ uri: PROFILE_IMAGE }} style={styles.profileImage} />
+            {profileImage ? (
+              <Image source={{ uri: profileImage }} style={styles.profileImage} />
             ) : (
               <View style={styles.profileFallback}>
                 <Text style={styles.profileFallbackText}>{initials.charAt(0)}</Text>
@@ -40,7 +42,7 @@ function CustomDrawerContent(props: any) {
             )}
 
             <View style={{ flex: 1 }}>
-              <Text style={styles.profileName}>{USER_NAME}</Text>
+              <Text style={styles.profileName}>{userName}</Text>
               <Text style={styles.profileSubText}>Let's plan your day smartly</Text>
             </View>
           </View>
@@ -147,6 +149,13 @@ export default function HomeLayout() {
         name="settings"
         options={{
           title: 'Settings',
+          drawerItemStyle: { display: 'none' },
+        }}
+      />
+      <Drawer.Screen
+        name="edit-profile"
+        options={{
+          title: 'Edit Profile',
           drawerItemStyle: { display: 'none' },
         }}
       />

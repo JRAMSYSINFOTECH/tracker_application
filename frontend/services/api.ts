@@ -17,11 +17,19 @@ export type SignupPayload = {
   email: string;
   password: string;
   gender?: 'F' | 'M' | 'O';
+  profileImageUri?: string | null;
 };
 
 export type LoginPayload = {
   email: string;
   password: string;
+};
+
+export type UpdateProfilePayload = {
+  name: string;
+  email: string;
+  gender?: 'F' | 'M' | 'O';
+  profileImageUri?: string | null;
 };
 
 export type TaskStatus = 'pending' | 'in_progress' | 'completed' | 'missed';
@@ -163,7 +171,7 @@ export const apiRequest = async <T>(
     ...options.headers,
   };
 
-  if (options.body !== undefined) {
+  if (options.body !== undefined && !(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json';
   }
 
@@ -181,7 +189,9 @@ export const apiRequest = async <T>(
     response = await fetch(buildUrl(path), {
       method: options.method || 'GET',
       headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.body === undefined 
+        ? undefined 
+        : (options.body instanceof FormData ? (options.body as any) : JSON.stringify(options.body)),
     });
   } catch {
     throw new ApiError(
@@ -213,11 +223,44 @@ export const getApiErrorMessage = (error: unknown, fallback: string) => {
 };
 
 export const authApi = {
-  signup: (payload: SignupPayload) =>
-    apiRequest<AuthResponse>('/api/auth/signup', {
-      method: 'POST',
-      body: payload,
-    }),
+  signup: (payload: SignupPayload) => {
+    if (payload.profileImageUri) {
+      const formData = new FormData();
+      formData.append('name', payload.name);
+      formData.append('email', payload.email);
+      formData.append('password', payload.password);
+      if (payload.gender) {
+        formData.append('gender', payload.gender);
+      }
+
+      const uri = payload.profileImageUri;
+      const uriParts = uri.split('/');
+      const fileName = uriParts[uriParts.length - 1];
+      const fileExt = fileName.split('.').pop() || 'jpg';
+      const fileType = fileExt === 'jpg' ? 'jpeg' : fileExt;
+
+      formData.append('profile_pic', {
+        uri,
+        name: fileName,
+        type: `image/${fileType}`,
+      } as any);
+
+      return apiRequest<AuthResponse>('/api/auth/signup', {
+        method: 'POST',
+        body: formData,
+      });
+    } else {
+      return apiRequest<AuthResponse>('/api/auth/signup', {
+        method: 'POST',
+        body: {
+          name: payload.name,
+          email: payload.email,
+          password: payload.password,
+          gender: payload.gender,
+        },
+      });
+    }
+  },
   login: (payload: LoginPayload) =>
     apiRequest<AuthResponse>('/api/auth/login', {
       method: 'POST',
@@ -259,4 +302,37 @@ export const dashboardApi = {
     apiRequest<GeneratePlanResponse>('/api/ai/generate-plan', {
       method: 'POST',
     }),
+};
+
+export const userApi = {
+  getProfile: () => apiRequest<any>('/api/user/profile'),
+  updateProfile: (payload: UpdateProfilePayload) => {
+    const formData = new FormData();
+    formData.append('name', payload.name);
+    formData.append('email', payload.email);
+    if (payload.gender) {
+      formData.append('gender', payload.gender);
+    }
+
+    if (payload.profileImageUri) {
+      const uri = payload.profileImageUri;
+      if (!uri.startsWith('http://') && !uri.startsWith('https://')) {
+        const uriParts = uri.split('/');
+        const fileName = uriParts[uriParts.length - 1];
+        const fileExt = fileName.split('.').pop() || 'jpg';
+        const fileType = fileExt === 'jpg' ? 'jpeg' : fileExt;
+
+        formData.append('profile_pic', {
+          uri,
+          name: fileName,
+          type: `image/${fileType}`,
+        } as any);
+      }
+    }
+
+    return apiRequest<any>('/api/user/update-profile', {
+      method: 'PUT',
+      body: formData,
+    });
+  },
 };

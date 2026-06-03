@@ -15,7 +15,7 @@ import {
   View,
 } from 'react-native';
 
-const PROFILE_IMAGE = '';
+// PROFILE_IMAGE constant removed, using user?.profile_pic dynamically
 
 type TaskStatus = 'pending' | 'completed';
 
@@ -268,9 +268,13 @@ export default function DashboardScreen() {
             <Text style={styles.subText}>Let's plan your day smartly</Text>
           </View>
 
-          <TouchableOpacity style={styles.avatar} activeOpacity={0.8}>
-            {PROFILE_IMAGE ? (
-              <Image source={{ uri: PROFILE_IMAGE }} style={styles.avatarImage} />
+          <TouchableOpacity 
+            style={styles.avatar} 
+            activeOpacity={0.8}
+            onPress={() => router.push('/(tabs)/home/settings')}
+          >
+            {user?.profile_pic ? (
+              <Image source={{ uri: user.profile_pic }} style={styles.avatarImage} />
             ) : (
               <Text style={styles.avatarText}>{initials.charAt(0)}</Text>
             )}
@@ -375,7 +379,7 @@ export default function DashboardScreen() {
               <TouchableOpacity
                 style={styles.aiTaskPill}
                 activeOpacity={0.85}
-                onPress={() => navigateWithClose('/(tabs)/home/today-plan')}
+                onPress={() => navigateWithClose('/(tabs)/home/AISchedulerScreen')}
               >
                 <Ionicons name="sparkles-outline" size={14} color="#111" />
                 <Text style={styles.aiTaskPillText}>Generate Plan</Text>
@@ -661,8 +665,8 @@ export default function DashboardScreen() {
 
                 <View style={styles.userRow}>
                   <View style={styles.profileCircle}>
-                    {PROFILE_IMAGE ? (
-                      <Image source={{ uri: PROFILE_IMAGE }} style={styles.profileImage} />
+                    {user?.profile_pic ? (
+                      <Image source={{ uri: user.profile_pic }} style={styles.profileImage} />
                     ) : (
                       <Text style={styles.profileLetter}>{initials.charAt(0)}</Text>
                     )}

@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
   authApi,
+  userApi,
   getApiErrorMessage,
   setAuthToken,
 } from '../../../services/api';
@@ -18,8 +19,9 @@ type Gender = 'F' | 'M' | 'O';
 type User = {
   name: string;
   email: string;
-  password: string;
+  password?: string;
   gender?: Gender;
+  profile_pic?: string | null;
 };
 
 type AuthContextType = {
@@ -33,7 +35,8 @@ type AuthContextType = {
     name: string,
     email: string,
     password: string,
-    gender?: Gender
+    gender?: Gender,
+    profileImageUri?: string | null
   ) => Promise<{
     success: boolean;
     message?: string;
@@ -50,6 +53,16 @@ type AuthContextType = {
   logout: () => Promise<void>;
 
   clearAllAuthData: () => Promise<void>;
+
+  updateProfile: (
+    name: string,
+    email: string,
+    gender?: Gender,
+    profileImageUri?: string | null
+  ) => Promise<{
+    success: boolean;
+    message?: string;
+  }>;
 };
 
 const CURRENT_USER_KEY =
@@ -126,7 +139,8 @@ export function AuthProvider({
     name: string,
     email: string,
     password: string,
-    gender?: Gender
+    gender?: Gender,
+    profileImageUri?: string | null
   ) => {
 
     try {
@@ -138,6 +152,7 @@ export function AuthProvider({
           email,
           password,
           gender,
+          profileImageUri,
         });
 
       const newUser: User = {
@@ -146,6 +161,7 @@ export function AuthProvider({
         email,
         password,
         gender,
+        profile_pic: (response as any).profile_pic || (response as any).user?.profile_pic || null,
       };
 
       await AsyncStorage.setItem(
@@ -205,6 +221,8 @@ export function AuthProvider({
         name: response.user?.name || email.split('@')[0],
         email,
         password,
+        gender: (response.user as any)?.gender,
+        profile_pic: (response.user as any)?.profile_pic || null,
       };
 
       await AsyncStorage.setItem(
@@ -302,6 +320,46 @@ export function AuthProvider({
       }
     };
 
+  const updateProfile = async (
+    name: string,
+    email: string,
+    gender?: Gender,
+    profileImageUri?: string | null
+  ) => {
+    try {
+      const response = await userApi.updateProfile({
+        name,
+        email,
+        gender,
+        profileImageUri,
+      });
+
+      const updatedUser: User = {
+        name: response.user?.name || name,
+        email: response.user?.email || email,
+        gender: response.user?.gender || gender,
+        profile_pic: response.user?.profile_pic || null,
+      };
+
+      await AsyncStorage.setItem(
+        CURRENT_USER_KEY,
+        JSON.stringify(updatedUser)
+      );
+
+      setUser(updatedUser);
+
+      return {
+        success: true,
+        message: response.message,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: getApiErrorMessage(error, 'Update profile failed'),
+      };
+    }
+  };
+
   return (
 
     <AuthContext.Provider
@@ -313,6 +371,7 @@ export function AuthProvider({
         login,
         logout,
         clearAllAuthData,
+        updateProfile,
       }}
     >
       {children}

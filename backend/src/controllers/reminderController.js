@@ -2,7 +2,7 @@ import prisma from "../config/prisma.js";
 
 // ✅ Create Reminder
 export const createReminder = async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.user_id;
 
   try {
     const { task_id, remind_at, frequency } = req.body;
@@ -57,7 +57,7 @@ export const createReminder = async (req, res) => {
 
 // ✅ Get Due Reminders (FIX 1 applied)
 export const getReminders = async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.user_id;
 
   try {
     const now = new Date(); // ✅ FIX (store once)
@@ -96,7 +96,7 @@ export const getReminders = async (req, res) => {
 
 // ✅ Update Reminder (FIX 2 applied)
 export const updateReminder = async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.user_id;
   const reminderId = Number(req.params.id);
 
 if (!reminderId) {
@@ -169,7 +169,7 @@ if (!validFrequencies.includes(frequency)) {
 
 // ✅ Delete Reminder
 export const deleteReminder = async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.user.user_id;
   const reminderId = parseInt(req.params.id);
 
   try {

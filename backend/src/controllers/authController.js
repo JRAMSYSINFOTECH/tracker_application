@@ -6,7 +6,7 @@ import cloudinary from "../config/cloudinary.js";
 // Signup
 export const signup = async (req, res) => {
 
-  const { name, email, password } = req.body;
+  const { name, email, password, gender } = req.body;
 
   const emailLower = email.toLowerCase();
 
@@ -22,6 +22,23 @@ export const signup = async (req, res) => {
       });
     }
 
+    let profilePicUrl = null;
+
+    if (req.file) {
+      const uploadResult = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: "profile_pics" },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        stream.end(req.file.buffer);
+      });
+
+      profilePicUrl = uploadResult.secure_url;
+    }
+
     const hashedPassword =
       await bcrypt.hash(password, 10);
 
@@ -29,7 +46,9 @@ export const signup = async (req, res) => {
       data: {
         name,
         email: emailLower,
-        password_hash: hashedPassword
+        password_hash: hashedPassword,
+        gender,
+        profile_pic: profilePicUrl
       }
     });
 
@@ -51,7 +70,11 @@ export const signup = async (req, res) => {
 
       name: user.name,
 
-      email: user.email
+      email: user.email,
+
+      gender: user.gender,
+
+      profile_pic: user.profile_pic
     });
 
   } catch (err) {
@@ -110,6 +133,8 @@ export const login = async (req, res) => {
         user_id: user.user_id,
         name: user.name,
         email: user.email,
+        gender: user.gender,
+        profile_pic: user.profile_pic
       },
     });
 
