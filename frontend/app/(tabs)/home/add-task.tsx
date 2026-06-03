@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Platform } from 'react-native';
 import { useTaskContext } from '../../../constants/src/context/TaskContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { scheduleTaskNotification } from '../../../services/notificationService';
@@ -218,62 +219,129 @@ export default function AddTaskScreen() {
             <Text style={styles.cardTitle}>Task Deadline</Text>
           </View>
 
-          <View style={styles.deadlineRow}>
-            <View style={styles.deadlineBlock}>
-              <Text style={styles.fieldLabel}>Date</Text>
+          {Platform.OS === 'web' ? (
+            <View style={styles.deadlineRow}>
+              <View style={styles.deadlineBlock}>
+                <Text style={styles.fieldLabel}>Date</Text>
+                <View style={styles.inputWithIcon}>
+                  <input
+                    type="date"
+                    value={deadline}
+                    onChange={(e: any) => {
+                      const val = e.target.value;
+                      setDeadline(val);
+                      if (val) setSelectedDate(new Date(val));
+                    }}
+                    style={{
+                      flex: 1,
+                      border: 'none',
+                      outline: 'none',
+                      background: 'transparent',
+                      fontSize: 15,
+                      color: '#111',
+                      fontFamily: 'inherit',
+                      padding: '10px 0',
+                    }}
+                  />
+                </View>
+              </View>
 
-              <TouchableOpacity
-                style={styles.inputWithIcon}
-                onPress={() => setShowDatePicker(true)}
-              >
-                <Text style={styles.inlineInput}>
-                  {deadline || 'Select date'}
-                </Text>
-
-                <Ionicons
-                  name="calendar-outline"
-                  size={20}
-                  color="#df5ca8"
-                />
-              </TouchableOpacity>
+              <View style={styles.deadlineBlock}>
+                <Text style={styles.fieldLabel}>Time</Text>
+                <View style={styles.inputWithIcon}>
+                  <input
+                    type="time"
+                    value={time ? `${(() => {
+                      const [h, m] = time.split(':');
+                      let hours = parseInt(h);
+                      if (meridiem === 'PM' && hours < 12) hours += 12;
+                      if (meridiem === 'AM' && hours === 12) hours = 0;
+                      return `${hours.toString().padStart(2, '0')}:${m}`;
+                    })()}` : ''}
+                    onChange={(e: any) => {
+                      const val = e.target.value;
+                      if (val) {
+                        const [h, m] = val.split(':');
+                        const hours = parseInt(h);
+                        const formattedTime = `${hours % 12 || 12}:${m}`;
+                        setTime(formattedTime);
+                        setMeridiem(hours >= 12 ? 'PM' : 'AM');
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      border: 'none',
+                      outline: 'none',
+                      background: 'transparent',
+                      fontSize: 15,
+                      color: '#111',
+                      fontFamily: 'inherit',
+                      padding: '10px 0',
+                    }}
+                  />
+                </View>
+              </View>
             </View>
+          ) : (
+            <>
+              <View style={styles.deadlineRow}>
+                <View style={styles.deadlineBlock}>
+                  <Text style={styles.fieldLabel}>Date</Text>
 
-            <View style={styles.deadlineBlock}>
-              <Text style={styles.fieldLabel}>Time</Text>
+                  <TouchableOpacity
+                    style={styles.inputWithIcon}
+                    onPress={() => setShowDatePicker(true)}
+                  >
+                    <Text style={styles.inlineInput}>
+                      {deadline || 'Select date'}
+                    </Text>
 
-              <TouchableOpacity
-                style={styles.inputWithIcon}
-                onPress={() => setShowTimePicker(true)}
-              >
-                <Text style={styles.inlineInput}>
-                  {time || 'Select time'}
-                </Text>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={20}
+                      color="#df5ca8"
+                    />
+                  </TouchableOpacity>
+                </View>
 
-                <Ionicons
-                  name="time-outline"
-                  size={20}
-                  color="#df5ca8"
+                <View style={styles.deadlineBlock}>
+                  <Text style={styles.fieldLabel}>Time</Text>
+
+                  <TouchableOpacity
+                    style={styles.inputWithIcon}
+                    onPress={() => setShowTimePicker(true)}
+                  >
+                    <Text style={styles.inlineInput}>
+                      {time || 'Select time'}
+                    </Text>
+
+                    <Ionicons
+                      name="time-outline"
+                      size={20}
+                      color="#df5ca8"
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={selectedDate}
+                  mode="date"
+                  display="default"
+                  onChange={onChangeDate}
                 />
-              </TouchableOpacity>
-            </View>
-          </View>
+              )}
 
-          {showDatePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="date"
-              display="default"
-              onChange={onChangeDate}
-            />
-          )}
-
-          {showTimePicker && (
-            <DateTimePicker
-              value={selectedDate}
-              mode="time"
-              display="default"
-              onChange={onChangeTime}
-            />
+              {showTimePicker && (
+                <DateTimePicker
+                  value={selectedDate}
+                  mode="time"
+                  display="default"
+                  onChange={onChangeTime}
+                />
+              )}
+            </>
           )}
 
           <View style={styles.amPmRow}>
