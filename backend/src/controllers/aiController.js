@@ -146,6 +146,378 @@ function calculateConfidence(task, isAI) {
 }
 
 
+// ================= RESCHEDULE HELPERS =================
+const VALID_RESCHEDULE_RECOMMENDATIONS =
+  new Set(["change", "keep"]);
+
+function parseRescheduleRequest(body) {
+
+  const planItemId = Number(body.plan_item_id);
+
+  if (
+    !Number.isInteger(planItemId) ||
+    planItemId <= 0
+  ) {
+    return {
+      error: "Valid plan_item_id is required"
+    };
+  }
+
+  const newStart = new Date(body.new_start);
+  const newEnd = new Date(body.new_end);
+
+  if (Number.isNaN(newStart.getTime())) {
+    return {
+      error: "Valid new_start is required"
+    };
+  }
+
+  if (Number.isNaN(newEnd.getTime())) {
+    return {
+      error: "Valid new_end is required"
+    };
+  }
+
+  if (newEnd <= newStart) {
+    return {
+      error: "new_end must be after new_start"
+    };
+  }
+
+  return {
+    planItemId,
+    newStart,
+    newEnd
+  };
+}
+
+function getPlanDayWindow(planDate) {
+
+  const dayStart = new Date(planDate);
+
+  dayStart.setHours(0, 0, 0, 0);
+
+  const dayEnd = new Date(dayStart);
+
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  return {
+    dayStart,
+    dayEnd
+  };
+}
+
+function isWithinPlanDay(planDate, newStart, newEnd) {
+
+  const {
+    dayStart,
+    dayEnd
+  } = getPlanDayWindow(planDate);
+
+  return (
+    newStart >= dayStart &&
+    newStart < dayEnd &&
+    newEnd > dayStart &&
+    newEnd <= dayEnd
+  );
+}
+
+function rangesOverlap(startA, endA, startB, endB) {
+
+  return startA < endB && endA > startB;
+}
+
+function formatScheduleRange(start, end) {
+
+  if (!start || !end) {
+    return "unscheduled";
+  }
+
+  return `${new Date(start).toISOString()} - ${new Date(end).toISOString()}`;
+}
+
+function normalizeRescheduleAnalysis(parsed) {
+
+  if (
+    !parsed ||
+    typeof parsed !== "object" ||
+    Array.isArray(parsed)
+  ) {
+    throw new Error("Invalid reschedule analysis");
+  }
+
+  const {
+    advantages,
+    disadvantages,
+    recommendation,
+    summary
+  } = parsed;
+
+  if (
+    !Array.isArray(advantages) ||
+    !Array.isArray(disadvantages) ||
+    !VALID_RESCHEDULE_RECOMMENDATIONS.has(recommendation) ||
+    typeof summary !== "string"
+  ) {
+    throw new Error("Invalid reschedule analysis shape");
+  }
+
+  return {
+    advantages: advantages.map(String),
+    disadvantages: disadvantages.map(String),
+    recommendation,
+    summary
+  };
+}
+
+async function callRescheduleAI(prompt, retries = 2) {
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+
+    try {
+
+      console.log(`AI reschedule attempt ${attempt}`);
+
+      const response = await axios.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          model: "openai/gpt-oss-120b:free",
+
+          messages: [
+            {
+              role: "user",
+              content: prompt
+            }
+          ]
+        },
+        {
+          timeout: 5000,
+          headers: {
+            Authorization:
+              `Bearer ${process.env.OPENROUTER_API_KEY}`,
+
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      let text =
+        response.data.choices[0].message.content;
+
+      text = text
+        .replace(/```json/g, "")
+        .replace(/```/g, "")
+        .trim();
+
+      return normalizeRescheduleAnalysis(
+        JSON.parse(text)
+      );
+
+    } catch (err) {
+
+      console.warn(
+        `AI reschedule attempt ${attempt} failed:`,
+        err.message
+      );
+
+      if (attempt === retries) {
+        throw err;
+      }
+
+      await new Promise(res =>
+        setTimeout(res, 1000)
+      );
+    }
+  }
+}
+
+function buildReschedulePrompt(
+  targetItem,
+  planItems,
+  fixedEvents,
+  newStart,
+  newEnd
+) {
+
+  const currentSchedule = planItems.map(item => ({
+    title: item.task.title,
+    type: "planned_task",
+    status: item.item_status,
+    time: formatScheduleRange(
+      item.start_time,
+      item.end_time
+    )
+  }));
+
+  const fixedSchedule = fixedEvents.map(event => ({
+    title: event.title,
+    type: "fixed_event_non_movable",
+    time: formatScheduleRange(
+      event.start_time,
+      event.end_time
+    )
+  }));
+
+  return `
+You are an intelligent AI productivity scheduler.
+
+Analyze whether this task should be rescheduled.
+
+Current Schedule:
+${JSON.stringify([...currentSchedule, ...fixedSchedule], null, 2)}
+
+User wants to move:
+${targetItem.task.title}
+
+From:
+${formatScheduleRange(targetItem.start_time, targetItem.end_time)}
+
+To:
+${formatScheduleRange(newStart, newEnd)}
+
+Task Priority:
+${targetItem.task.importance_hint || "not set"}
+
+Deadline:
+${targetItem.task.deadline}
+
+Rules:
+1. Fixed events are non-movable commitments.
+2. Consider overlaps, priority, deadline, and schedule flow.
+3. Recommendation must be either "change" or "keep".
+4. Return JSON only.
+5. Do not use markdown.
+
+Return exactly:
+{
+  "advantages": [],
+  "disadvantages": [],
+  "recommendation": "change",
+  "summary": ""
+}
+`;
+}
+
+function buildFallbackRescheduleAnalysis(
+  otherPlanItems,
+  fixedEvents,
+  newStart,
+  newEnd
+) {
+
+  const fixedConflict = fixedEvents.find(event =>
+    rangesOverlap(
+      newStart,
+      newEnd,
+      new Date(event.start_time),
+      new Date(event.end_time)
+    )
+  );
+
+  if (fixedConflict) {
+    return {
+      advantages: [
+        "Keeping the original time avoids a fixed commitment conflict."
+      ],
+      disadvantages: [
+        `The proposed time overlaps the fixed event "${fixedConflict.title}".`
+      ],
+      recommendation: "keep",
+      summary:
+        "Keep the current slot because the proposed time conflicts with a fixed event."
+    };
+  }
+
+  const itemConflict = otherPlanItems.find(item => {
+
+    if (!item.start_time || !item.end_time) {
+      return false;
+    }
+
+    return rangesOverlap(
+      newStart,
+      newEnd,
+      new Date(item.start_time),
+      new Date(item.end_time)
+    );
+  });
+
+  if (itemConflict) {
+    return {
+      advantages: [
+        "Keeping the original time avoids disrupting another planned task."
+      ],
+      disadvantages: [
+        `The proposed time overlaps "${itemConflict.task.title}".`
+      ],
+      recommendation: "keep",
+      summary:
+        "Keep the current slot because the proposed time overlaps another scheduled item."
+    };
+  }
+
+  return {
+    advantages: [
+      "The proposed time does not overlap existing planned tasks or fixed events.",
+      "The task can be moved while preserving a chronological schedule."
+    ],
+    disadvantages: [
+      "Review whether the new time still fits the task priority and deadline."
+    ],
+    recommendation: "change",
+    summary:
+      "The proposed move appears schedule-safe based on deterministic overlap checks."
+  };
+}
+
+async function reorderPlanItemsByStartTime(tx, planId) {
+
+  const dayItems = await tx.dailyPlanItem.findMany({
+    where: {
+      plan_id: planId
+    },
+    select: {
+      plan_item_id: true,
+      start_time: true,
+      slot_order: true
+    },
+    orderBy: {
+      slot_order: "asc"
+    }
+  });
+
+  dayItems.sort((a, b) => {
+
+    const aTime = a.start_time
+      ? new Date(a.start_time).getTime()
+      : Number.MAX_SAFE_INTEGER;
+
+    const bTime = b.start_time
+      ? new Date(b.start_time).getTime()
+      : Number.MAX_SAFE_INTEGER;
+
+    if (aTime !== bTime) {
+      return aTime - bTime;
+    }
+
+    return a.slot_order - b.slot_order;
+  });
+
+  await Promise.all(
+    dayItems.map((item, index) =>
+      tx.dailyPlanItem.update({
+        where: {
+          plan_item_id: item.plan_item_id
+        },
+        data: {
+          slot_order: index + 1
+        }
+      })
+    )
+  );
+}
+
+
 // ================= ANALYZE TASK =================
 export const analyzeTask = async (req, res) => {
 
@@ -564,6 +936,265 @@ RETURN FORMAT:
 
     res.status(500).json({
       error: "Failed to generate plan"
+    });
+  }
+};
+
+
+// ================= ANALYZE RESCHEDULE =================
+export const analyzeReschedule = async (req, res) => {
+
+  const userId = req.user.user_id;
+
+  const parsedRequest =
+    parseRescheduleRequest(req.body);
+
+  if (parsedRequest.error) {
+    return res.status(400).json({
+      message: parsedRequest.error
+    });
+  }
+
+  const {
+    planItemId,
+    newStart,
+    newEnd
+  } = parsedRequest;
+
+  try {
+
+    const targetItem =
+      await prisma.dailyPlanItem.findFirst({
+        where: {
+          plan_item_id: planItemId,
+          plan: {
+            user_id: userId
+          }
+        },
+        include: {
+          plan: true,
+          task: true
+        }
+      });
+
+    if (!targetItem) {
+      return res.status(404).json({
+        message: "Plan item not found"
+      });
+    }
+
+    if (
+      !isWithinPlanDay(
+        targetItem.plan.plan_date,
+        newStart,
+        newEnd
+      )
+    ) {
+      return res.status(400).json({
+        message:
+          "Proposed time must stay within the plan date"
+      });
+    }
+
+    const {
+      dayStart,
+      dayEnd
+    } = getPlanDayWindow(
+      targetItem.plan.plan_date
+    );
+
+    const [planItems, fixedEvents] =
+      await Promise.all([
+        prisma.dailyPlanItem.findMany({
+          where: {
+            plan_id: targetItem.plan_id
+          },
+          include: {
+            task: true
+          },
+          orderBy: [
+            {
+              start_time: "asc"
+            },
+            {
+              slot_order: "asc"
+            }
+          ]
+        }),
+
+        prisma.fixedEvent.findMany({
+          where: {
+            user_id: userId,
+            start_time: {
+              lt: dayEnd
+            },
+            end_time: {
+              gt: dayStart
+            }
+          },
+          orderBy: {
+            start_time: "asc"
+          }
+        })
+      ]);
+
+    const otherPlanItems =
+      planItems.filter(
+        item =>
+          item.plan_item_id !==
+          targetItem.plan_item_id
+      );
+
+    try {
+
+      const prompt = buildReschedulePrompt(
+        targetItem,
+        planItems,
+        fixedEvents,
+        newStart,
+        newEnd
+      );
+
+      const analysis =
+        await callRescheduleAI(
+          prompt,
+          2
+        );
+
+      return res.json(analysis);
+
+    } catch (err) {
+
+      console.warn(
+        "Using reschedule fallback:",
+        err.message
+      );
+
+      return res.json(
+        buildFallbackRescheduleAnalysis(
+          otherPlanItems,
+          fixedEvents,
+          newStart,
+          newEnd
+        )
+      );
+    }
+
+  } catch (err) {
+
+    console.error(
+      "ANALYZE RESCHEDULE ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      error:
+        "Failed to analyze reschedule"
+    });
+  }
+};
+
+
+// ================= RESCHEDULE ITEM =================
+export const rescheduleItem = async (req, res) => {
+
+  const userId = req.user.user_id;
+
+  const parsedRequest =
+    parseRescheduleRequest(req.body);
+
+  if (parsedRequest.error) {
+    return res.status(400).json({
+      message: parsedRequest.error
+    });
+  }
+
+  const {
+    planItemId,
+    newStart,
+    newEnd
+  } = parsedRequest;
+
+  try {
+
+    const targetItem =
+      await prisma.dailyPlanItem.findFirst({
+        where: {
+          plan_item_id: planItemId,
+          plan: {
+            user_id: userId
+          }
+        },
+        include: {
+          plan: true,
+          task: true
+        }
+      });
+
+    if (!targetItem) {
+      return res.status(404).json({
+        message: "Plan item not found"
+      });
+    }
+
+    if (
+      !isWithinPlanDay(
+        targetItem.plan.plan_date,
+        newStart,
+        newEnd
+      )
+    ) {
+      return res.status(400).json({
+        message:
+          "Proposed time must stay within the plan date"
+      });
+    }
+
+    const updatedItem =
+      await prisma.$transaction(async tx => {
+
+        await tx.dailyPlanItem.update({
+          where: {
+            plan_item_id: planItemId
+          },
+          data: {
+            start_time: newStart,
+            end_time: newEnd,
+            item_status: "moved"
+          }
+        });
+
+        await reorderPlanItemsByStartTime(
+          tx,
+          targetItem.plan_id
+        );
+
+        return tx.dailyPlanItem.findUnique({
+          where: {
+            plan_item_id: planItemId
+          },
+          include: {
+            task: true,
+            plan: true
+          }
+        });
+      });
+
+    res.json({
+      message: "Item rescheduled",
+      item: updatedItem
+    });
+
+  } catch (err) {
+
+    console.error(
+      "RESCHEDULE ITEM ERROR:",
+      err
+    );
+
+    res.status(500).json({
+      error:
+        "Failed to reschedule item"
     });
   }
 };
