@@ -189,8 +189,8 @@ export const apiRequest = async <T>(
     response = await fetch(buildUrl(path), {
       method: options.method || 'GET',
       headers,
-      body: options.body === undefined 
-        ? undefined 
+      body: options.body === undefined
+        ? undefined
         : (options.body instanceof FormData ? (options.body as any) : JSON.stringify(options.body)),
     });
   } catch {
@@ -301,6 +301,40 @@ export const dashboardApi = {
   generatePlan: () =>
     apiRequest<GeneratePlanResponse>('/api/ai/generate-plan', {
       method: 'POST',
+    }),
+};
+export type RescheduleAnalysisResponse = {
+  advantages: string[];
+  disadvantages: string[];
+  recommendation: 'change' | 'keep';
+  summary: string;
+};
+
+export const aiApi = {
+  analyzeReschedule: (payload: {
+    plan_item_id: number;
+    new_start: string;
+    new_end: string;
+  }) =>
+    apiRequest<RescheduleAnalysisResponse>(
+      '/api/ai/analyze-reschedule',
+      {
+        method: 'POST',
+        body: payload,
+      }
+    ),
+
+  rescheduleItem: (payload: {
+    plan_item_id: number;
+    new_start: string;
+    new_end: string;
+  }) =>
+    apiRequest<{
+      message: string;
+      item: TodayPlanItem;
+    }>('/api/ai/reschedule-item', {
+      method: 'POST',
+      body: payload,
     }),
 };
 

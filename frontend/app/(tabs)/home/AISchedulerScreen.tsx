@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Image,
   Modal,
   PanResponder,
   ScrollView,
@@ -18,10 +19,7 @@ import { useAuth } from '../../../constants/src/context/AuthContext';
 import TopCurve from '../../../constants/src/components/TopCurve';
 import { commonStyles } from '../../../constants/src/theme/commonStyles';
 import { dashboardApi, TodayPlanItem } from '../../../services/api';
-import {
-  LongPressGestureHandler,
-  State,
-} from 'react-native-gesture-handler';
+import { aiApi } from '../../../services/api';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type RescheduleAnalysis = {
@@ -423,40 +421,78 @@ export default function AISchedulerScreen() {
 
   // ── Handle drag drop ──────────────────────────────────────────────────────
   const handleRescheduleRequest = useCallback(
-    (item: TodayPlanItem, newStart: Date, newEnd: Date) => {
-      const analysis = computeAnalysis(item, planItems, newStart, newEnd);
-      setPending({ item, newStart, newEnd, analysis });
-      setModalVisible(true);
+    async (item: TodayPlanItem, newStart: Date, newEnd: Date) => {
+      try {
+        const analysis = await aiApi.analyzeReschedule({
+          plan_item_id: item.plan_item_id,
+          new_start: newStart.toISOString(),
+          new_end: newEnd.toISOString(),
+        });
+
+        setPending({
+          item,
+          newStart,
+          newEnd,
+          analysis,
+        });
+
+        setModalVisible(true);
+      } catch (error) {
+        console.log('ANALYZE ERROR:', error);
+        Alert.alert(
+          'Error',
+          'Unable to analyze reschedule'
+        );
+      }
     },
     [planItems]
   );
 
   // ── Confirm reschedule ────────────────────────────────────────────────────
-  const handleConfirm = useCallback(() => {
+  const handleConfirm = useCallback(async () => {
     if (!pending) return;
-    // Optimistically update local state (UI reflects new time immediately)
-    setPlanItems((prev) =>
-      prev
-        .map((p) =>
-          p.plan_item_id === pending.item.plan_item_id
-            ? {
-              ...p,
-              start_time: pending.newStart.toISOString(),
-              end_time: pending.newEnd.toISOString(),
-            }
-            : p
-        )
-        .sort(
-          (a, b) =>
-            new Date(a.start_time!).getTime() -
-            new Date(b.start_time!).getTime()
-        )
-    );
-    setModalVisible(false);
-    setPending(null);
-    Alert.alert('✅ Rescheduled!', 'Task moved to the new time slot.');
-  }, [pending]);
 
+    try {
+      await aiApi.rescheduleItem({
+        plan_item_id: pending.item.plan_item_id,
+        new_start: pending.newStart.toISOString(),
+        new_end: pending.newEnd.toISOString(),
+      });
+
+      setPlanItems((prev) =>
+        prev
+          .map((p) =>
+            p.plan_item_id === pending.item.plan_item_id
+              ? {
+                ...p,
+                start_time: pending.newStart.toISOString(),
+                end_time: pending.newEnd.toISOString(),
+              }
+              : p
+          )
+          .sort(
+            (a, b) =>
+              new Date(a.start_time!).getTime() -
+              new Date(b.start_time!).getTime()
+          )
+      );
+
+      setModalVisible(false);
+      setPending(null);
+
+      Alert.alert(
+        '✅ Rescheduled!',
+        'Task moved to the new time slot.'
+      );
+    } catch (error) {
+      console.log('RESCHEDULE ERROR:', error);
+
+      Alert.alert(
+        'Error',
+        'Failed to reschedule task'
+      );
+    }
+  }, [pending]);
   // ── Cancel reschedule ─────────────────────────────────────────────────────
   const handleCancel = useCallback(() => {
     setModalVisible(false);
@@ -481,7 +517,14 @@ export default function AISchedulerScreen() {
             <Text style={styles.subText}>Let's plan your day smartly</Text>
           </View>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
+            {user?.profile_pic ? (
+              <Image
+                source={{ uri: user.profile_pic }}
+                style={styles.avatarImage}
+              />
+            ) : (
+              <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
+            )}
           </View>
         </View>
 
@@ -723,7 +766,8 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 },
   hello: { fontSize: 28, fontWeight: '800', color: '#111', marginBottom: 4 },
   subText: { fontSize: 15, color: '#555' },
-  avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#c68be9', alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#c68be9', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  avatarImage: { width: 52, height: 52, borderRadius: 26 },
   avatarText: { fontSize: 22, fontWeight: '700', color: '#fff' },
   mainCard: { backgroundColor: '#f7d0fb', borderRadius: 24, padding: 22, marginBottom: 20 },
   mainCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },

@@ -44,8 +44,11 @@ export default function AddTaskScreen() {
     if (selected) {
       setSelectedDate(selected);
 
-      const formattedDate = selected.toISOString().split('T')[0];
-      setDeadline(formattedDate);
+      // Format as YYYY-MM-DD in LOCAL time (not UTC)
+      const year = selected.getFullYear();
+      const month = String(selected.getMonth() + 1).padStart(2, '0');
+      const day = String(selected.getDate()).padStart(2, '0');
+      setDeadline(`${year}-${month}-${day}`);
     }
   };
 
@@ -53,7 +56,19 @@ export default function AddTaskScreen() {
     setShowTimePicker(false);
 
     if (selected) {
-      setSelectedDate(selected);
+      // Preserve the DATE from selectedDate (user's picked date).
+      // The time picker returns today's date + selected time, which would
+      // overwrite the future date the user picked and cause deadline errors.
+      const preserved = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth(),
+        selectedDate.getDate(),
+        selected.getHours(),
+        selected.getMinutes(),
+        0,
+        0
+      );
+      setSelectedDate(preserved);
 
       const hours = selected.getHours();
       const minutes = selected.getMinutes();
@@ -85,30 +100,26 @@ export default function AddTaskScreen() {
     const [hours, minutes] =
       time.split(':');
 
-    const finalDate =
-      new Date(deadline);
+    let finalHours = Number(hours);
 
-    let finalHours =
-      Number(hours);
-
-    if (
-      meridiem === 'PM' &&
-      finalHours < 12
-    ) {
+    if (meridiem === 'PM' && finalHours < 12) {
       finalHours += 12;
     }
-
-    if (
-      meridiem === 'AM' &&
-      finalHours === 12
-    ) {
+    if (meridiem === 'AM' && finalHours === 12) {
       finalHours = 0;
     }
 
-    finalDate.setHours(finalHours);
-
-    finalDate.setMinutes(
-      Number(minutes)
+    // Build date using local time components to avoid UTC timezone offset issues.
+    // Using new Date("YYYY-MM-DD") parses as UTC midnight, which in IST (+05:30)
+    // becomes the previous evening — making valid future deadlines appear past.
+    const finalDate = new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      finalHours,
+      Number(minutes),
+      0,
+      0
     );
 
     // Map priority to backend importance_hint
