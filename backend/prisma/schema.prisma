@@ -55,7 +55,7 @@ model AiTaskAnalysis {
   suggested_start_time DateTime?
   created_at           DateTime @default(now())
 
-  task Task @relation(fields: [task_id], references: [task_id])
+  task Task @relation(fields: [task_id], references: [task_id], onDelete: Cascade)
 }
 
 model DailyPlan {
@@ -82,7 +82,7 @@ model DailyPlanItem {
   confidence_score Float 
 
   plan DailyPlan @relation(fields: [plan_id], references: [plan_id])
-  task Task      @relation(fields: [task_id], references: [task_id])
+  task Task @relation(fields: [task_id], references: [task_id], onDelete: Cascade)
   @@unique([plan_id, task_id]) 
 }
 
@@ -93,7 +93,7 @@ model Reminder {
   frequency   Frequency @default(once)
   is_active   Boolean   @default(true)
 
-  task Task @relation(fields: [task_id], references: [task_id])
+  task Task @relation(fields: [task_id], references: [task_id], onDelete: Cascade)
 }
 
 model FixedEvent {

@@ -120,6 +120,8 @@ function computeAnalysis(
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 function formatTime(isoString: string) {
+  console.log("TIME FROM API:", isoString);
+
   return new Date(isoString).toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
