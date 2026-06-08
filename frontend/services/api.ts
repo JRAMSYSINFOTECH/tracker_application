@@ -9,6 +9,7 @@ export type AuthResponse = {
     user_id: number;
     name: string;
     email: string;
+     profile_pic?: string | null;
   };
 };
 
@@ -226,9 +227,11 @@ export const authApi = {
   signup: (payload: SignupPayload) => {
     if (payload.profileImageUri) {
       const formData = new FormData();
+
       formData.append('name', payload.name);
       formData.append('email', payload.email);
       formData.append('password', payload.password);
+
       if (payload.gender) {
         formData.append('gender', payload.gender);
       }
@@ -239,18 +242,27 @@ export const authApi = {
       const fileExt = fileName.split('.').pop() || 'jpg';
       const fileType = fileExt === 'jpg' ? 'jpeg' : fileExt;
 
-      formData.append('profile_pic', {
-        uri,
-        name: fileName,
-        type: `image/${fileType}`,
-      } as any);
+      formData.append(
+        'profile_pic',
+        {
+          uri,
+          name: fileName,
+          type: `image/${fileType}`,
+        } as any
+      );
 
-      return apiRequest<AuthResponse>('/api/auth/signup', {
-        method: 'POST',
-        body: formData,
-      });
-    } else {
-      return apiRequest<AuthResponse>('/api/auth/signup', {
+      return apiRequest<AuthResponse>(
+        '/api/auth/signup',
+        {
+          method: 'POST',
+          body: formData,
+        }
+      );
+    }
+
+    return apiRequest<AuthResponse>(
+      '/api/auth/signup',
+      {
         method: 'POST',
         body: {
           name: payload.name,
@@ -258,14 +270,36 @@ export const authApi = {
           password: payload.password,
           gender: payload.gender,
         },
-      });
-    }
+      }
+    );
   },
+
   login: (payload: LoginPayload) =>
-    apiRequest<AuthResponse>('/api/auth/login', {
-      method: 'POST',
-      body: payload,
-    }),
+    apiRequest<AuthResponse>(
+      '/api/auth/login',
+      {
+        method: 'POST',
+        body: payload,
+      }
+    ),
+
+  googleLogin: () => {
+    return `${API_URL}/auth/google`;
+  },
+
+  googleMobileLogin: (payload: {
+    email: string;
+    name: string;
+    googleId: string;
+    profile_pic?: string;
+  }) =>
+    apiRequest<AuthResponse>(
+      '/api/auth/google-mobile',
+      {
+        method: 'POST',
+        body: payload,
+      }
+    ),
 };
 
 export const taskApi = {

@@ -50,6 +50,16 @@ type AuthContextType = {
     message?: string;
   }>;
 
+  googleLogin: (
+  email: string,
+  name: string,
+  googleId: string,
+  profile_pic?: string
+) => Promise<{
+  success: boolean;
+  message?: string;
+}>;
+
   logout: () => Promise<void>;
 
   clearAllAuthData: () => Promise<void>;
@@ -65,8 +75,7 @@ type AuthContextType = {
   }>;
 };
 
-const CURRENT_USER_KEY =
-  'current_user';
+const CURRENT_USER_KEY = 'current_user';
 
 const AuthContext = createContext<
   AuthContextType | undefined
@@ -77,7 +86,6 @@ export function AuthProvider({
 }: {
   children: React.ReactNode;
 }) {
-
   const [user, setUser] =
     useState<User | null>(null);
 
@@ -85,13 +93,8 @@ export function AuthProvider({
     useState(true);
 
   useEffect(() => {
-
     const initAuth = async () => {
-
       try {
-
-        await AsyncStorage.clear();
-
         const storedCurrentUser =
           await AsyncStorage.getItem(
             CURRENT_USER_KEY
@@ -103,7 +106,6 @@ export function AuthProvider({
           );
 
         if (storedCurrentUser) {
-
           setUser(
             JSON.parse(
               storedCurrentUser
@@ -112,27 +114,21 @@ export function AuthProvider({
         }
 
         if (storedToken) {
-
           setAuthToken(
             storedToken
           );
         }
-
       } catch (error) {
-
         console.log(
           'Init auth error:',
           error
         );
-
       } finally {
-
         setLoading(false);
       }
     };
 
     initAuth();
-
   }, []);
 
   const signup = async (
@@ -142,12 +138,9 @@ export function AuthProvider({
     gender?: Gender,
     profileImageUri?: string | null
   ) => {
-
     try {
-
       const response =
         await authApi.signup({
-
           name,
           email,
           password,
@@ -156,12 +149,14 @@ export function AuthProvider({
         });
 
       const newUser: User = {
-
         name,
         email,
         password,
         gender,
-        profile_pic: (response as any).profile_pic || (response as any).user?.profile_pic || null,
+        profile_pic:
+          (response as any).profile_pic ||
+          (response as any).user?.profile_pic ||
+          null,
       };
 
       await AsyncStorage.setItem(
@@ -174,11 +169,6 @@ export function AuthProvider({
         response.token
       );
 
-      console.log(
-        'SIGNUP TOKEN:',
-        response.token
-      );
-
       setAuthToken(
         response.token
       );
@@ -187,12 +177,9 @@ export function AuthProvider({
 
       return {
         success: true,
-        message:
-          response.message,
+        message: response.message,
       };
-
     } catch (error) {
-
       return {
         success: false,
         message:
@@ -208,9 +195,7 @@ export function AuthProvider({
     email: string,
     password: string
   ) => {
-
     try {
-
       const response =
         await authApi.login({
           email,
@@ -218,11 +203,16 @@ export function AuthProvider({
         });
 
       const loggedInUser: User = {
-        name: response.user?.name || email.split('@')[0],
+        name:
+          response.user?.name ||
+          email.split('@')[0],
         email,
         password,
-        gender: (response.user as any)?.gender,
-        profile_pic: (response.user as any)?.profile_pic || null,
+        gender:
+          (response.user as any)?.gender,
+        profile_pic:
+          (response.user as any)
+            ?.profile_pic || null,
       };
 
       await AsyncStorage.setItem(
@@ -234,11 +224,6 @@ export function AuthProvider({
 
       await AsyncStorage.setItem(
         'token',
-        response.token
-      );
-
-      console.log(
-        'LOGIN TOKEN:',
         response.token
       );
 
@@ -255,9 +240,7 @@ export function AuthProvider({
         message:
           response.message,
       };
-
     } catch (error) {
-
       return {
         success: false,
         message:
@@ -269,10 +252,63 @@ export function AuthProvider({
     }
   };
 
+  const googleLogin = async (
+  email: string,
+  name: string,
+  googleId: string,
+  profile_pic?: string
+) => {
+  try {
+    const response =
+      await authApi.googleMobileLogin({
+        email,
+        name,
+        googleId,
+        profile_pic,
+      });
+
+    const googleUser: User = {
+      name,
+      email,
+      profile_pic: profile_pic || null,
+    };
+
+    await AsyncStorage.setItem(
+      CURRENT_USER_KEY,
+      JSON.stringify(googleUser)
+    );
+
+    await AsyncStorage.setItem(
+      'token',
+      response.token
+    );
+
+    setAuthToken(
+      response.token
+    );
+
+    setUser(
+      googleUser
+    );
+
+    return {
+      success: true,
+      message: response.message,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message:
+        getApiErrorMessage(
+          error,
+          'Google login failed'
+        ),
+    };
+  }
+};
+
   const logout = async () => {
-
     try {
-
       setUser(null);
 
       await AsyncStorage.removeItem(
@@ -284,9 +320,7 @@ export function AuthProvider({
       );
 
       setAuthToken(null);
-
     } catch (error) {
-
       console.log(
         'Logout error:',
         error
@@ -296,9 +330,7 @@ export function AuthProvider({
 
   const clearAllAuthData =
     async () => {
-
       try {
-
         await AsyncStorage.removeItem(
           CURRENT_USER_KEY
         );
@@ -310,9 +342,7 @@ export function AuthProvider({
         setUser(null);
 
         setAuthToken(null);
-
       } catch (error) {
-
         console.log(
           'Clear auth data error:',
           error
@@ -327,18 +357,26 @@ export function AuthProvider({
     profileImageUri?: string | null
   ) => {
     try {
-      const response = await userApi.updateProfile({
-        name,
-        email,
-        gender,
-        profileImageUri,
-      });
+      const response =
+        await userApi.updateProfile({
+          name,
+          email,
+          gender,
+          profileImageUri,
+        });
 
       const updatedUser: User = {
-        name: response.user?.name || name,
-        email: response.user?.email || email,
-        gender: response.user?.gender || gender,
-        profile_pic: response.user?.profile_pic || null,
+        name:
+          response.user?.name || name,
+        email:
+          response.user?.email ||
+          email,
+        gender:
+          response.user?.gender ||
+          gender,
+        profile_pic:
+          response.user?.profile_pic ||
+          null,
       };
 
       await AsyncStorage.setItem(
@@ -350,43 +388,45 @@ export function AuthProvider({
 
       return {
         success: true,
-        message: response.message,
+        message:
+          response.message,
       };
     } catch (error) {
       return {
         success: false,
-        message: getApiErrorMessage(error, 'Update profile failed'),
+        message:
+          getApiErrorMessage(
+            error,
+            'Update profile failed'
+          ),
       };
     }
   };
 
   return (
-
     <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        loading,
-        signup,
-        login,
-        logout,
-        clearAllAuthData,
-        updateProfile,
-      }}
-    >
+  value={{
+    user,
+    isAuthenticated: !!user,
+    loading,
+    signup,
+    login,
+    googleLogin,
+    logout,
+    clearAllAuthData,
+    updateProfile,
+  }}
+>
       {children}
     </AuthContext.Provider>
-
   );
 }
 
 export function useAuth() {
-
   const context =
     useContext(AuthContext);
 
   if (!context) {
-
     throw new Error(
       'useAuth must be used inside AuthProvider'
     );
