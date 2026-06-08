@@ -146,6 +146,95 @@ export const login = async (req, res) => {
   }
 };
 
+// Google Mobile Login
+export const googleMobileLogin = async (
+  req,
+  res
+) => {
+
+  const {
+    email,
+    name,
+    googleId,
+    profile_pic
+  } = req.body;
+
+  try {
+
+    let user =
+      await prisma.user.findUnique({
+        where: {
+          email: email.toLowerCase()
+        }
+      });
+
+    // Create user if not exists
+
+    if (!user) {
+
+      user =
+        await prisma.user.create({
+
+          data: {
+
+            name,
+
+            email: email.toLowerCase(),
+
+            googleId,
+
+            profile_pic:
+              profile_pic || null,
+
+            password_hash:
+              "GOOGLE_AUTH_USER",
+          }
+        });
+    }
+
+    // Generate JWT
+
+    const token = jwt.sign(
+      {
+        user_id: user.user_id
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "7d"
+      }
+    );
+
+    return res.json({
+
+      message:
+        "Google login successful",
+
+      token,
+
+      user: {
+
+        user_id:
+          user.user_id,
+
+        name:
+          user.name,
+
+        email:
+          user.email,
+
+        profile_pic:
+          user.profile_pic,
+      }
+    });
+
+  } catch (err) {
+
+    return res.status(500).json({
+      error: err.message
+    });
+  }
+};
+
 // Update User Profile
 export const updateUserProfile = async (
   req,

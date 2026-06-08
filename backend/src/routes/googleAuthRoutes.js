@@ -4,7 +4,10 @@ import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
-// Step 1
+/**
+ * STEP 1
+ * Start Google Login
+ */
 router.get(
   "/google",
   passport.authenticate("google", {
@@ -12,22 +15,50 @@ router.get(
   })
 );
 
-// Step 2 (IMPORTANT)
+/**
+ * STEP 2
+ * Google Callback
+ */
 router.get(
   "/google/callback",
   passport.authenticate("google", {
     failureRedirect: "/",
+    session: false,
   }),
-  (req, res) => {
-    // ✅ Generate JWT
-    const token = jwt.sign(
-      { id: req.user.id, email: req.user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
+  async (req, res) => {
+    try {
+      const token = jwt.sign(
+        {
+          user_id: req.user.user_id,
+          email: req.user.email,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "1d",
+        }
+      );
 
-    // ✅ Redirect to frontend with token
-    res.redirect(`http://localhost:3000/dashboard?token=${token}`);
+      return res.json({
+        success: true,
+        token,
+        user: {
+          user_id: req.user.user_id,
+          name: req.user.name,
+          email: req.user.email,
+          profile_pic: req.user.profile_pic,
+        },
+      });
+    } catch (error) {
+      console.error(
+        "Google Callback Error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: "Google authentication failed",
+      });
+    }
   }
 );
 
