@@ -31,11 +31,11 @@ console.log(
 export default function LoginScreen() {
   const router = useRouter();
   const {
-  login,
-  googleLogin,
-  isAuthenticated,
-  loading,
-} = useAuth();
+    login,
+    googleLogin,
+    isAuthenticated,
+    loading,
+  } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,62 +44,63 @@ export default function LoginScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   const [request, response, promptAsync] =
-  Google.useAuthRequest({
-    webClientId:
-      '446093814127-g4cik9l3bnt2mo88mbdiijpr37etr414.apps.googleusercontent.com',
-      redirectUri: 'http://localhost:8081',
-  });
+    Google.useAuthRequest({
+      webClientId:
+        '446093814127-g4cik9l3bnt2mo88mbdiijpr37etr414.apps.googleusercontent.com',
+      androidClientId:
+        '446093814127-90bqcrbbf6qoigfpohu0skg9o7auqjek.apps.googleusercontent.com',
+    });
 
-   useEffect(() => {
-  const signInWithGoogle = async () => {
-    if (
-      response?.type === 'success'
-    ) {
-      try {
-        const accessToken =
-          response.authentication?.accessToken;
+  useEffect(() => {
+    const signInWithGoogle = async () => {
+      if (
+        response?.type === 'success'
+      ) {
+        try {
+          const accessToken =
+            response.authentication?.accessToken;
 
-        const userInfoResponse =
-          await fetch(
-            'https://www.googleapis.com/userinfo/v2/me',
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
+          const userInfoResponse =
+            await fetch(
+              'https://www.googleapis.com/userinfo/v2/me',
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                },
+              }
+            );
 
-        const userInfo =
-          await userInfoResponse.json();
+          const userInfo =
+            await userInfoResponse.json();
 
-        const result =
-          await googleLogin(
-            userInfo.email,
-            userInfo.name,
-            userInfo.id,
-            userInfo.picture
-          );
+          const result =
+            await googleLogin(
+              userInfo.email,
+              userInfo.name,
+              userInfo.id,
+              userInfo.picture
+            );
 
-        if (result.success) {
-          router.replace('/(tabs)/home');
-        } else {
-          setError(
-            result.message ||
+          if (result.success) {
+            router.replace('/(tabs)/home');
+          } else {
+            setError(
+              result.message ||
               'Google login failed'
+            );
+          }
+        } catch (error) {
+          console.log(error);
+
+          setError(
+            'Google login failed'
           );
         }
-      } catch (error) {
-        console.log(error);
-
-        setError(
-          'Google login failed'
-        );
       }
-    }
-  };
+    };
 
-  signInWithGoogle();
-},  [response, googleLogin, router]);
+    signInWithGoogle();
+  }, [response, googleLogin, router]);
 
   if (loading) {
     return (
