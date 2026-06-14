@@ -49,6 +49,7 @@ export default function LoginScreen() {
         '446093814127-g4cik9l3bnt2mo88mbdiijpr37etr414.apps.googleusercontent.com',
       androidClientId:
         '446093814127-90bqcrbbf6qoigfpohu0skg9o7auqjek.apps.googleusercontent.com',
+      redirectUri: 'https://auth.expo.io/@jramsys/Intern',
     });
 
   useEffect(() => {
