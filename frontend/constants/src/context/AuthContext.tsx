@@ -374,13 +374,16 @@ export function AuthProvider({
         gender:
           response.user?.gender ||
           gender,
-        // Use backend URL if available, else keep the newly chosen local URI,
-        // else fallback to existing profile_pic so it's never accidentally cleared
+        // If profileImageUri is null, user removed their photo → clear it.
+        // If it's a string (local URI or URL), use backend URL or the URI.
+        // Otherwise keep existing profile_pic.
         profile_pic:
-          response.user?.profile_pic ||
-          profileImageUri ||
-          user?.profile_pic ||
-          null,
+          profileImageUri === null
+            ? (response.user?.profile_pic ?? null)
+            : response.user?.profile_pic ||
+              profileImageUri ||
+              user?.profile_pic ||
+              null,
       };
 
       await AsyncStorage.setItem(

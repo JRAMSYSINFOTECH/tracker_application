@@ -19,7 +19,7 @@ import {
 
 // PROFILE_IMAGE constant removed, using user?.profile_pic dynamically
 
-type TaskStatus = 'pending' | 'completed';
+type TaskStatus = 'pending' | 'completed' | 'missed';
 
 type DashboardTask = {
   id: number;
@@ -61,7 +61,9 @@ export default function DashboardScreen() {
 
       // Map backend statuses to dashboard display statuses
       const mappedStatus: TaskStatus =
-        task.status === 'completed' ? 'completed' : 'pending';
+        task.status === 'completed' ? 'completed'
+        : task.status === 'missed' ? 'missed'
+        : 'pending';
 
       return {
         id: task.id,
@@ -122,10 +124,11 @@ export default function DashboardScreen() {
     totalCount === 0 ? 0 : Math.round((completedCount / totalCount) * 100);
 
   const filteredTasks = useMemo(() => {
-    // Show ALL tasks, filtered only by status (not by date)
     if (selectedFilter === 'all') return formattedTasks;
     return formattedTasks.filter((task) => task.status === selectedFilter);
   }, [selectedFilter, formattedTasks]);
+
+  const missedTasks = useMemo(() => formattedTasks.filter((t) => t.status === 'missed'), [formattedTasks]);
 
   const selectedDateTasks = useMemo(() => {
     return formattedTasks.filter((task) => task.dateKey === selectedDateKey);
@@ -321,10 +324,14 @@ export default function DashboardScreen() {
             <Text style={styles.statLabel}>Pending</Text>
           </TouchableOpacity>
 
-          <View style={[styles.statCard, styles.missedCard]}>
+          <TouchableOpacity
+            style={[styles.statCard, styles.missedCard]}
+            onPress={() => setSelectedFilter('missed')}
+            activeOpacity={0.85}
+          >
             <Text style={styles.statNumber}>{missedCount}</Text>
             <Text style={styles.statLabel}>Missed</Text>
-          </View>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.progressCard}>
@@ -444,6 +451,23 @@ export default function DashboardScreen() {
                 Completed
               </Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterChip,
+                selectedFilter === 'missed' && styles.filterChipActive,
+              ]}
+              onPress={() => setSelectedFilter('missed')}
+            >
+              <Text
+                style={[
+                  styles.filterText,
+                  selectedFilter === 'missed' && styles.filterTextActive,
+                ]}
+              >
+                Missed
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -458,7 +482,9 @@ export default function DashboardScreen() {
               <View
                 style={[
                   styles.statusBadge,
-                  task.status === 'pending' ? styles.pendingBadge : styles.completedBadge,
+                  task.status === 'pending' ? styles.pendingBadge
+                    : task.status === 'missed' ? styles.missedBadge
+                    : styles.completedBadge,
                 ]}
               >
                 <Text
@@ -466,10 +492,12 @@ export default function DashboardScreen() {
                     styles.statusText,
                     task.status === 'pending'
                       ? styles.pendingBadgeText
+                      : task.status === 'missed'
+                      ? styles.missedBadgeText
                       : styles.completedBadgeText,
                   ]}
                 >
-                  {task.status === 'pending' ? 'Pending' : 'Completed'}
+                  {task.status === 'pending' ? 'Pending' : task.status === 'missed' ? 'Missed' : 'Completed'}
                 </Text>
               </View>
             </View>
@@ -477,12 +505,20 @@ export default function DashboardScreen() {
 
           {filteredTasks.length === 0 && (
             <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>No tasks for selected date</Text>
+              <Text style={styles.emptyTitle}>
+                {selectedFilter === 'missed' ? 'No missed tasks 🎉' :
+                 selectedFilter === 'completed' ? 'No completed tasks yet' :
+                 selectedFilter === 'pending' ? 'No pending tasks' :
+                 'No tasks yet'}
+              </Text>
               <Text style={styles.emptyText}>
-                This day has no tasks in the selected filter.
+                {selectedFilter === 'missed'
+                  ? 'Great job! You have no missed tasks.'
+                  : 'Try adding a new task using the + Add button.'}
               </Text>
             </View>
           )}
+
         </View>
 
         <View style={styles.tipCard}>
@@ -1151,12 +1187,18 @@ const styles = StyleSheet.create({
   completedBadge: {
     backgroundColor: '#dff8de',
   },
+  missedBadge: {
+    backgroundColor: '#fde8e8',
+  },
   statusText: {
     fontSize: 11.5,
     fontWeight: '800',
   },
   pendingBadgeText: {
     color: '#126a8a',
+  },
+  missedBadgeText: {
+    color: '#c0392b',
   },
   completedBadgeText: {
     color: '#1f7a31',

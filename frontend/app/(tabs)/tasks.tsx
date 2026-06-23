@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useTaskContext } from '../../constants/src/context/TaskContext';
 
-type FilterType = 'All' | 'ToDo' | 'InProgress' | 'Completed';
+type FilterType = 'All' | 'ToDo' | 'InProgress' | 'Completed' | 'Missed';
 
 type TaskType = {
   id: number;
@@ -51,6 +51,8 @@ export default function MyTasksScreen() {
       status:
         task.status === 'completed'
           ? 'Completed'
+          : task.status === 'missed'
+          ? 'Missed'
           : 'ToDo',
     };
   });
@@ -62,7 +64,7 @@ export default function MyTasksScreen() {
   const [editTime, setEditTime] = useState('');
   const [editStatus, setEditStatus] = useState<FilterType>('ToDo');
 
-  const filters: FilterType[] = ['All', 'ToDo', 'InProgress', 'Completed'];
+  const filters: FilterType[] = ['All', 'ToDo', 'InProgress', 'Completed', 'Missed'];
 
   const filteredTasks = useMemo(() => {
     let filtered =
@@ -89,6 +91,8 @@ export default function MyTasksScreen() {
         return styles.progressBadge;
       case 'Completed':
         return styles.completedBadge;
+      case 'Missed':
+        return styles.missedBadge;
       default:
         return styles.todoBadge;
     }
@@ -102,6 +106,8 @@ export default function MyTasksScreen() {
         return styles.progressText;
       case 'Completed':
         return styles.completedText;
+      case 'Missed':
+        return styles.missedText;
       default:
         return styles.todoText;
     }
@@ -340,6 +346,8 @@ export default function MyTasksScreen() {
                         ? 'To Do'
                         : item.status === 'InProgress'
                           ? 'In Progress'
+                          : item.status === 'Missed'
+                          ? 'Missed'
                           : 'Completed'}
                     </Text>
                   </View>
@@ -676,6 +684,12 @@ const styles = StyleSheet.create({
   },
   completedText: {
     color: '#15803D',
+  },
+  missedBadge: {
+    backgroundColor: '#FEE2E2',
+  },
+  missedText: {
+    color: '#B91C1C',
   },
   priorityWrap: {
     flexDirection: 'row',

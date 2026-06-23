@@ -9,7 +9,7 @@ import { taskApi, ApiError } from '../../../services/api';
 import type { CreateTaskPayload } from '../../../services/api';
 import { useAuth } from './AuthContext';
 
-export type TaskStatus = 'pending' | 'completed';
+export type TaskStatus = 'pending' | 'completed' | 'missed';
 
 export type TaskItem = {
   id: number;
@@ -61,7 +61,7 @@ export const TaskProvider = ({
         title: task.title,
         deadline: task.deadline,
         time: task.deadline,
-        status: task.status === 'completed' ? 'completed' : 'pending',
+        status: task.status === 'completed' ? 'completed' : task.status === 'missed' ? 'missed' : 'pending',
         description: task.description ?? undefined,
         importance: task.importance_hint ?? undefined,
       }));
@@ -87,7 +87,7 @@ export const TaskProvider = ({
         title: response.task.title,
         deadline: response.task.deadline,
         time: response.task.deadline,
-        status: response.task.status === 'completed' ? 'completed' : 'pending',
+        status: response.task.status === 'completed' ? 'completed' : response.task.status === 'missed' ? 'missed' : 'pending',
         description: response.task.description ?? undefined,
         importance: response.task.importance_hint ?? undefined,
       };
