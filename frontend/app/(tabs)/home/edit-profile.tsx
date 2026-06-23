@@ -130,7 +130,16 @@ export default function EditProfileScreen() {
           </View>
         </TouchableOpacity>
 
-        <Text style={styles.label}>Profile Picture</Text>
+        <View style={styles.photoActionsRow}>
+          <TouchableOpacity onPress={pickImage} disabled={submitting}>
+            <Text style={styles.changePhotoText}>Change Photo</Text>
+          </TouchableOpacity>
+          {profileImage ? (
+            <TouchableOpacity onPress={() => setProfileImage(null)} disabled={submitting}>
+              <Text style={styles.removePhotoText}>Remove Photo</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
 
         <View style={styles.genderContainer}>
           <Text style={styles.genderTitle}>Gender</Text>
@@ -286,12 +295,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: {
-    textAlign: 'center',
-    fontSize: 14,
-    color: '#888',
+  photoActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
     marginBottom: 25,
-    fontWeight: '500',
+  },
+  changePhotoText: {
+    color: '#a14ccf',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  removePhotoText: {
+    color: '#ff4b4b',
+    fontWeight: '600',
+    fontSize: 14,
   },
   genderContainer: {
     marginBottom: 20,

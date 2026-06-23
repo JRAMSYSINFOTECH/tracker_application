@@ -35,6 +35,8 @@ model Task {
   estimated_minutes Int
   importance_hint   Importance?
   status            Status   @default(pending)
+  repeat_frequency  Frequency @default(once)
+  next_instance_created Boolean @default(false)
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 

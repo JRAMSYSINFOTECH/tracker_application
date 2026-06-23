@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { AuthProvider, useAuth } from '../constants/src/context/AuthContext';
 import { TaskProvider } from '../constants/src/context/TaskContext';
+import { ThemeProvider } from '../constants/src/context/ThemeContext';
 import { useEffect } from 'react';
 import { registerForPushNotificationsAsync } from '../services/notificationService';
 
@@ -12,7 +13,10 @@ function RootNavigator() {
 
   useEffect(() => {
     if (loading) return;
-  }, [loading]);
+    if (!isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [loading, isAuthenticated]);
 
   if (loading) {
     return (
@@ -40,11 +44,13 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <AuthProvider>
-      <TaskProvider>
-        <RootNavigator />
-        <StatusBar hidden />
-      </TaskProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <TaskProvider>
+          <RootNavigator />
+          <StatusBar hidden />
+        </TaskProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

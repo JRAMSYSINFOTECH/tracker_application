@@ -1,26 +1,6 @@
 import prisma from "../config/prisma.js";
 
-// 🔹 Helper: Mark plan as stale only if exists
-const markPlanAsStale = async (userId) => {
-  const existingPlan = await prisma.dailyPlan.findFirst({
-    where: {
-      user_id: userId,
-      status: "generated"
-    }
-  });
-
-  if (existingPlan) {
-    await prisma.dailyPlan.updateMany({
-      where: {
-        user_id: userId,
-        status: "generated"
-      },
-      data: {
-        status: "stale"
-      }
-    });
-  }
-};
+import { markPlanAsStale, spawnNextOccurrence } from "../utils/taskUtils.js";
 
 // ✅ Create Task
 export const createTask = async (req, res) => {
@@ -31,7 +11,8 @@ export const createTask = async (req, res) => {
       title,
       deadline,
       estimated_minutes,
-      status
+      status,
+      repeat_frequency
     } = req.body;
 
 
@@ -65,6 +46,7 @@ export const createTask = async (req, res) => {
         deadline,
         estimated_minutes,
         status,
+        repeat_frequency: repeat_frequency || "once"
       },
     });
 
@@ -159,9 +141,14 @@ export const updateTask = async (req, res) => {
         ...(req.body.status && { status: req.body.status }),
         ...(req.body.importance_hint && { importance_hint: req.body.importance_hint }),
         ...(req.body.estimated_minutes && { estimated_minutes: req.body.estimated_minutes }),
-        ...(req.body.deadline && { deadline: new Date(req.body.deadline) })
+        ...(req.body.deadline && { deadline: new Date(req.body.deadline) }),
+        ...(req.body.repeat_frequency && { repeat_frequency: req.body.repeat_frequency })
       }
     });
+
+    if (updatedTask.status === "completed") {
+      await spawnNextOccurrence(updatedTask);
+    }
 
     await markPlanAsStale(userId);
 

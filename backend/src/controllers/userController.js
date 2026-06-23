@@ -100,15 +100,23 @@ export const updateUserProfile = async (req, res) => {
 
     // ✅ Update user
     console.log("Updating database record for user_id:", userId);
+    
+    let updateData = {
+      name: req.body.name,
+      email: req.body.email,
+      phone: req.body.phone,
+      gender: req.body.gender,
+    };
+    
+    if (profilePicUrl) {
+      updateData.profile_pic = profilePicUrl;
+    } else if (req.body.remove_profile_pic === 'true') {
+      updateData.profile_pic = null;
+    }
+
     const updatedUser = await prisma.user.update({
       where: { user_id: userId },
-      data: {
-        name: req.body.name,
-        email: req.body.email,
-        phone: req.body.phone,
-        gender: req.body.gender,
-        ...(profilePicUrl && { profile_pic: profilePicUrl })
-      }
+      data: updateData
     });
 
     console.log("Database update successful:", updatedUser);

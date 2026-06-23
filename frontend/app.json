@@ -41,7 +41,13 @@
         }
       ],
       "expo-web-browser",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.446093814127-g4cik9l3bnt2mo88mbdiijpr37etr414"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -50,10 +56,10 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "6957a993-f9f5-41c7-af86-1cee08889da0"
+        "projectId": "dcd596de-d3f8-4d88-a170-c5dba313356b"
       }
     },
-    "owner": "vyshnaviboddu",
+    "owner": "jramsys",
     "runtimeVersion": {
       "policy": "appVersion"
     },

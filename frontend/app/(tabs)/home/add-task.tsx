@@ -88,12 +88,14 @@ export default function AddTaskScreen() {
       !deadline.trim() ||
       !time.trim()
     ) {
-
-      Alert.alert(
-        'Missing details',
-        'Please fill all required fields.'
-      );
-
+      if (Platform.OS === 'web') {
+        window.alert('Please fill all required fields.');
+      } else {
+        Alert.alert(
+          'Missing details',
+          'Please fill all required fields.'
+        );
+      }
       return;
     }
 
@@ -144,6 +146,7 @@ export default function AddTaskScreen() {
         estimated_minutes: 60,
         importance_hint: importanceMap[priority],
         status: statusMap[status],
+        repeat_frequency: repeat.toLowerCase() as any,
       });
 
       if (
@@ -158,10 +161,29 @@ export default function AddTaskScreen() {
         );
       }
 
-      Alert.alert('Success', 'Task saved successfully!');
+      // Clear the form fields
+      setTitle('');
+      setDeadline('');
+      setTime('');
+      setNote('');
+      setMeridiem('');
+      setRepeat('Once');
+      setPriority('High');
+      setStatus('To Do');
+      setReminder(false);
+
+      if (Platform.OS === 'web') {
+        window.alert('Task saved successfully!');
+      } else {
+        Alert.alert('Success', 'Task saved successfully!');
+      }
       router.back();
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Failed to save task. Please try again.');
+      if (Platform.OS === 'web') {
+        window.alert(error?.message || 'Failed to save task. Please try again.');
+      } else {
+        Alert.alert('Error', error?.message || 'Failed to save task. Please try again.');
+      }
     }
   };
 

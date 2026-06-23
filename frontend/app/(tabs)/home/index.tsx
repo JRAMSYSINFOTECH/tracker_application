@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../../constants/src/context/AuthContext';
 import { useTaskContext } from '../../../constants/src/context/TaskContext';
+import { useTheme } from '../../../constants/src/context/ThemeContext';
+import { dashboardApi } from '../../../services/api';
 
 import {
   Image,
@@ -32,11 +34,21 @@ export default function DashboardScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { tasks: contextTasks } = useTaskContext();
+  const { theme } = useTheme();
 
   const [selectedFilter, setSelectedFilter] = useState<'all' | TaskStatus>('all');
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [monthModalVisible, setMonthModalVisible] = useState(false);
   const [quickActionsVisible, setQuickActionsVisible] = useState(false);
+  const [missedCount, setMissedCount] = useState(0);
+
+  useEffect(() => {
+    dashboardApi.overview().then((data) => {
+      setMissedCount(data.missed);
+    }).catch(() => {
+      // silently ignore if API fails
+    });
+  }, []);
 
   const USER_NAME = user?.name || 'User';
 
@@ -243,7 +255,7 @@ export default function DashboardScreen() {
   ];
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: theme.bg }]}>
       <View style={styles.topBg} />
 
       <ScrollView
@@ -310,7 +322,7 @@ export default function DashboardScreen() {
           </TouchableOpacity>
 
           <View style={[styles.statCard, styles.missedCard]}>
-            <Text style={styles.statNumber}>7</Text>
+            <Text style={styles.statNumber}>{missedCount}</Text>
             <Text style={styles.statLabel}>Missed</Text>
           </View>
         </View>
@@ -754,7 +766,7 @@ export default function DashboardScreen() {
             <TouchableOpacity
               style={styles.quickActionItem}
               activeOpacity={0.85}
-              onPress={() => navigateWithClose('/(tabs)/home/today-plan')}
+              onPress={() => navigateWithClose('/(tabs)/home/AISchedulerScreen')}
             >
               <View style={styles.quickActionIcon}>
                 <Ionicons name="sparkles-outline" size={18} color="#a14ccf" />

@@ -57,6 +57,7 @@ export type CreateTaskPayload = {
   estimated_minutes: number;
   importance_hint?: TaskImportance;
   status?: TaskStatus;
+  repeat_frequency?: ReminderFrequency;
 };
 
 
@@ -329,12 +330,24 @@ export const reminderApi = {
     }),
 };
 
+export type DashboardOverview = {
+  total: number;
+  pending: number;
+  inProgress: number;
+  completed: number;
+  missed: number;
+};
+
 export const dashboardApi = {
+  overview: () => apiRequest<DashboardOverview>('/api/dashboard/overview'),
   todayPlan: () => apiRequest<TodayPlanItem[]>('/api/dashboard/today-plan'),
   reminders: () => apiRequest<BackendReminder[]>('/api/dashboard/reminders'),
   generatePlan: () =>
     apiRequest<GeneratePlanResponse>('/api/ai/generate-plan', {
       method: 'POST',
+      body: {
+        timezoneOffset: new Date().getTimezoneOffset()
+      }
     }),
 };
 export type RescheduleAnalysisResponse = {
@@ -382,7 +395,9 @@ export const userApi = {
       formData.append('gender', payload.gender);
     }
 
-    if (payload.profileImageUri) {
+    if (payload.profileImageUri === null) {
+      formData.append('remove_profile_pic', 'true');
+    } else if (payload.profileImageUri) {
       const uri = payload.profileImageUri;
       if (!uri.startsWith('http://') && !uri.startsWith('https://')) {
         const uriParts = uri.split('/');

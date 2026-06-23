@@ -728,6 +728,7 @@ RULES:
 8. Avoid scheduling during fixed events
 9. Tasks must not overlap meetings
 10. Start after fixed events if needed
+11. User's timezone offset from UTC is ${req.body.timezoneOffset || 0} minutes. Ensure the generated start and end times reflect normal waking hours in this timezone. Output the times in valid UTC format ending in 'Z'.
 
 TASKS:
 ${JSON.stringify(taskData, null, 2)}

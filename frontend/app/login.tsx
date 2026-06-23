@@ -1,5 +1,6 @@
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
+import * as AuthSession from 'expo-auth-session';
 import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
@@ -12,7 +13,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import * as AuthSession from 'expo-auth-session';
 
 import AppButton from '../constants/src/components/AppButton';
 import AppInput from '../constants/src/components/AppInput';
@@ -23,10 +23,6 @@ import { colors } from '../constants/src/theme/colors';
 import { commonStyles } from '../constants/src/theme/commonStyles';
 
 WebBrowser.maybeCompleteAuthSession();
-console.log(
-  'Redirect URI:',
-  AuthSession.makeRedirectUri()
-);
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -43,63 +39,51 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const [request, response, promptAsync] =
-    Google.useAuthRequest({
-      webClientId:
-        '446093814127-g4cik9l3bnt2mo88mbdiijpr37etr414.apps.googleusercontent.com',
-      androidClientId:
-        '446093814127-90bqcrbbf6qoigfpohu0skg9o7auqjek.apps.googleusercontent.com',
-      redirectUri: 'https://auth.expo.io/@jramsys/Intern',
-    });
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    clientId: '446093814127-g4cik9l3bnt2mo88mbdiijpr37etr414.apps.googleusercontent.com',
+    webClientId: '446093814127-g4cik9l3bnt2mo88mbdiijpr37etr414.apps.googleusercontent.com',
+    androidClientId: '446093814127-g4cik9l3bnt2mo88mbdiijpr37etr414.apps.googleusercontent.com',
+    redirectUri: 'https://auth.expo.io/@jramsys/Intern',
+  }, {
+    projectNameForProxy: '@jramsys/Intern'
+  } as any);
+
+  useEffect(() => {
+    if (request) {
+      console.log('Google Auth Request Redirect URI:', request.redirectUri);
+    }
+  }, [request]);
 
   useEffect(() => {
     const signInWithGoogle = async () => {
-      if (
-        response?.type === 'success'
-      ) {
+      if (response?.type === 'success') {
         try {
-          const accessToken =
-            response.authentication?.accessToken;
-
-          const userInfoResponse =
-            await fetch(
-              'https://www.googleapis.com/userinfo/v2/me',
-              {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                },
-              }
-            );
-
-          const userInfo =
-            await userInfoResponse.json();
-
-          const result =
-            await googleLogin(
-              userInfo.email,
-              userInfo.name,
-              userInfo.id,
-              userInfo.picture
-            );
+          const accessToken = response.authentication?.accessToken;
+          const userInfoResponse = await fetch(
+            'https://www.googleapis.com/userinfo/v2/me',
+            {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            }
+          );
+          const userInfo = await userInfoResponse.json();
+          const result = await googleLogin(
+            userInfo.email,
+            userInfo.name,
+            userInfo.id,
+            userInfo.picture
+          );
 
           if (result.success) {
             router.replace('/(tabs)/home');
           } else {
-            setError(
-              result.message ||
-              'Google login failed'
-            );
+            setError(result.message || 'Google login failed');
           }
         } catch (error) {
           console.log(error);
-
-          setError(
-            'Google login failed'
-          );
+          setError('Google login failed');
         }
       }
     };
-
     signInWithGoogle();
   }, [response, googleLogin, router]);
 
@@ -236,7 +220,7 @@ export default function LoginScreen() {
 
           <OrDivider />
 
-          <TouchableOpacity style={styles.googleButton} disabled={!request || submitting} onPress={() => promptAsync()} >
+          <TouchableOpacity style={styles.googleButton} disabled={!request || submitting} onPress={() => promptAsync()}>
             <Image
               source={require('../assets/images/google-logo.png')}
               style={styles.googleLogo}

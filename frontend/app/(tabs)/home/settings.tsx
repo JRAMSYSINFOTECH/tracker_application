@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   StyleSheet,
@@ -10,45 +10,66 @@ import {
   ScrollView,
   Switch,
   Image,
+  Platform,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../../../constants/src/context/AuthContext';
+import { useTheme } from '../../../constants/src/context/ThemeContext';
+
+const NOTIFICATIONS_KEY = 'push_notifications_enabled';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { user, logout } = useAuth();
-  
+  const { isDarkMode, toggleDarkMode, theme } = useTheme();
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(NOTIFICATIONS_KEY).then((val) => {
+      if (val === 'false') setNotifications(false);
+    });
+  }, []);
+
+  const handleToggleNotifications = async (value: boolean) => {
+    setNotifications(value);
+    await AsyncStorage.setItem(NOTIFICATIONS_KEY, String(value));
+  };
 
   const handleLogout = async () => {
-    Alert.alert('Logout', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { 
-        text: 'Logout', 
-        style: 'destructive',
-        onPress: async () => {
-          await logout();
-          router.replace('/login');
-        }
-      },
-    ]);
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Are you sure you want to log out?');
+      if (confirmed) {
+        await logout();
+      }
+    } else {
+      Alert.alert('Logout', 'Are you sure you want to log out?', [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Logout', 
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+          }
+        },
+      ]);
+    }
   };
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#111" />
+    <View style={[styles.screen, { backgroundColor: theme.bg }]}>
+      <View style={[styles.header, { backgroundColor: theme.headerBg, borderBottomColor: theme.border }]}>
+        <TouchableOpacity style={[styles.backButton, { backgroundColor: theme.inputBg }]} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Settings</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         
         {/* PROFILE SECTION */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          <View style={styles.profileCard}>
+          <Text style={[styles.sectionTitle, { color: theme.sectionTitle }]}>Account</Text>
+          <View style={[styles.profileCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.profileAvatar}>
               {user?.profile_pic ? (
                 <Image source={{ uri: user.profile_pic }} style={styles.avatarImage} />
@@ -57,8 +78,8 @@ export default function SettingsScreen() {
               )}
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{user?.name || 'User'}</Text>
-              <Text style={styles.profileEmail}>{user?.email || 'email@example.com'}</Text>
+              <Text style={[styles.profileName, { color: theme.text }]}>{user?.name || 'User'}</Text>
+              <Text style={[styles.profileEmail, { color: theme.subText }]}>{user?.email || 'email@example.com'}</Text>
             </View>
             <TouchableOpacity 
               style={styles.editProfileBtn} 
@@ -72,34 +93,36 @@ export default function SettingsScreen() {
 
         {/* PREFERENCES SECTION */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-          <View style={styles.item}>
-            <Ionicons name="notifications-outline" size={22} color="#444" />
-            <Text style={styles.itemText}>Push Notifications</Text>
+          <Text style={[styles.sectionTitle, { color: theme.sectionTitle }]}>Preferences</Text>
+          <View style={[styles.item, { backgroundColor: theme.itemBg, borderColor: theme.border }]}>
+            <Ionicons name="notifications-outline" size={22} color={theme.iconColor} />
+            <Text style={[styles.itemText, { color: theme.text }]}>Push Notifications</Text>
             <Switch 
               value={notifications} 
-              onValueChange={setNotifications} 
-              trackColor={{ false: '#ddd', true: '#c68be9' }}
+              onValueChange={handleToggleNotifications}
+              trackColor={{ false: theme.switchTrackOff, true: theme.switchTrackOn }}
+              thumbColor={notifications ? '#fff' : '#f4f3f4'}
             />
           </View>
-          <View style={styles.item}>
-            <Ionicons name="moon-outline" size={22} color="#444" />
-            <Text style={styles.itemText}>Dark Mode</Text>
+          <View style={[styles.item, { backgroundColor: theme.itemBg, borderColor: theme.border }]}>
+            <Ionicons name="moon-outline" size={22} color={theme.iconColor} />
+            <Text style={[styles.itemText, { color: theme.text }]}>Dark Mode</Text>
             <Switch 
-              value={darkMode} 
-              onValueChange={setDarkMode} 
-              trackColor={{ false: '#ddd', true: '#c68be9' }}
+              value={isDarkMode} 
+              onValueChange={toggleDarkMode}
+              trackColor={{ false: theme.switchTrackOff, true: theme.switchTrackOn }}
+              thumbColor={isDarkMode ? '#fff' : '#f4f3f4'}
             />
           </View>
         </View>
 
         {/* ABOUT SECTION */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          <View style={styles.item}>
-            <Ionicons name="information-circle-outline" size={22} color="#444" />
-            <Text style={styles.itemText}>App Version</Text>
-            <Text style={styles.itemValue}>1.0.0</Text>
+          <Text style={[styles.sectionTitle, { color: theme.sectionTitle }]}>About</Text>
+          <View style={[styles.item, { backgroundColor: theme.itemBg, borderColor: theme.border }]}>
+            <Ionicons name="information-circle-outline" size={22} color={theme.iconColor} />
+            <Text style={[styles.itemText, { color: theme.text }]}>App Version</Text>
+            <Text style={[styles.itemValue, { color: theme.subText }]}>1.0.0</Text>
           </View>
         </View>
 
@@ -117,7 +140,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#fafafa',
   },
   header: {
     flexDirection: 'row',
@@ -125,15 +147,12 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f5f5f5',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 15,
@@ -141,7 +160,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#111',
   },
   content: {
     padding: 20,
@@ -152,7 +170,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#888',
     textTransform: 'uppercase',
     marginBottom: 10,
     marginLeft: 5,
@@ -160,9 +177,9 @@ const styles = StyleSheet.create({
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 16,
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -189,11 +206,9 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111',
   },
   profileEmail: {
     fontSize: 14,
-    color: '#666',
     marginTop: 2,
   },
   avatarImage: {
@@ -207,10 +222,10 @@ const styles = StyleSheet.create({
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
     marginBottom: 8,
+    borderWidth: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -221,12 +236,10 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
     marginLeft: 15,
   },
   itemValue: {
     fontSize: 14,
-    color: '#888',
     marginRight: 10,
   },
   logoutButton: {

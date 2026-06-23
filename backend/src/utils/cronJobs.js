@@ -1,11 +1,44 @@
 import cron from "node-cron";
 import prisma from "../config/prisma.js";
+import { spawnNextOccurrence } from "./taskUtils.js";
 
 cron.schedule("* * * * *", async () => {
   console.log("⏳ Checking reminders...");
 
   try {
     const now = new Date();
+
+    // Mark tasks as missed if deadline has passed
+    const missedTasksList = await prisma.task.findMany({
+      where: {
+        deadline: {
+          lt: now
+        },
+        status: {
+          in: ["pending", "in_progress"]
+        }
+      }
+    });
+
+    if (missedTasksList.length > 0) {
+      await prisma.task.updateMany({
+        where: {
+          task_id: {
+            in: missedTasksList.map(t => t.task_id)
+          }
+        },
+        data: {
+          status: "missed"
+        }
+      });
+
+      console.log(`❌ Marked ${missedTasksList.length} tasks as missed.`);
+
+      // Spawn next occurrences for missed recurring tasks
+      for (const task of missedTasksList) {
+        await spawnNextOccurrence(task);
+      }
+    }
 
     const reminders = await prisma.reminder.findMany({
       where: {

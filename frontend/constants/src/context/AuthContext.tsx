@@ -374,8 +374,12 @@ export function AuthProvider({
         gender:
           response.user?.gender ||
           gender,
+        // Use backend URL if available, else keep the newly chosen local URI,
+        // else fallback to existing profile_pic so it's never accidentally cleared
         profile_pic:
           response.user?.profile_pic ||
+          profileImageUri ||
+          user?.profile_pic ||
           null,
       };
 
