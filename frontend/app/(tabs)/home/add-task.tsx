@@ -15,6 +15,7 @@ import { Platform } from 'react-native';
 import { useTaskContext } from '../../../constants/src/context/TaskContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { scheduleTaskNotification } from '../../../services/notificationService';
+import { useTheme } from '../../../constants/src/context/ThemeContext';
 
 type RepeatType = 'Once' | 'Daily' | 'Weekly' | 'Custom';
 type PriorityType = 'High' | 'Medium' | 'Low';
@@ -23,6 +24,7 @@ type StatusType = 'To Do' | 'In Progress' | 'Completed';
 export default function AddTaskScreen() {
   const router = useRouter();
   const { addTask } = useTaskContext();
+  const { theme } = useTheme();
 
   const [title, setTitle] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -205,11 +207,11 @@ export default function AddTaskScreen() {
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
+      style={[styles.chip, { backgroundColor: selected ? theme.addTaskContainerBg : theme.addTaskChipBg, borderColor: selected ? '#df5ca8' : theme.addTaskChipBorder }, selected && styles.chipSelected]}
     >
       <View style={styles.chipInner}>
         {icon ? <View style={styles.chipIcon}>{icon}</View> : null}
-        <Text style={[styles.chipText, selected && { color: activeColor, fontWeight: '700' }]}>
+        <Text style={[styles.chipText, { color: theme.addTaskChipText }, selected && { color: activeColor, fontWeight: '700' }]}>
           {label}
         </Text>
       </View>
@@ -217,46 +219,46 @@ export default function AddTaskScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topShape} />
+    <View style={[styles.container, { backgroundColor: theme.addTaskContainerBg }]}>
+      <View style={[styles.topShape, { backgroundColor: theme.addTaskTopShape }]} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#111" />
+          <Ionicons name="chevron-back" size={24} color={theme.addTaskTitle} />
         </TouchableOpacity>
 
-        <Text style={styles.title}>Add Task</Text>
-        <Text style={styles.subtitle}>Create a task and organize your work clearly.</Text>
+        <Text style={[styles.title, { color: theme.addTaskTitle }]}>Add Task</Text>
+        <Text style={[styles.subtitle, { color: theme.addTaskSubtitle }]}>Create a task and organize your work clearly.</Text>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.addTaskCardBg, borderColor: theme.addTaskCardBorder }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.leftIconBox}>
+            <View style={[styles.leftIconBox, { backgroundColor: theme.addTaskIconBoxBg }]}>
               <Ionicons name="create-outline" size={20} color="#df5ca8" />
             </View>
-            <Text style={styles.cardTitle}>Task Title</Text>
+            <Text style={[styles.cardTitle, { color: theme.addTaskCardTitle }]}>Task Title</Text>
           </View>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: theme.addTaskInputBg, borderColor: theme.addTaskInputBorder, color: theme.addTaskInputText }]}
             value={title}
             onChangeText={setTitle}
             placeholder="Enter task title"
-            placeholderTextColor="#7A6D80"
+            placeholderTextColor={theme.isDark ? '#666' : '#7A6D80'}
           />
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.addTaskCardBg, borderColor: theme.addTaskCardBorder }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.leftIconBox}>
+            <View style={[styles.leftIconBox, { backgroundColor: theme.addTaskIconBoxBg }]}>
               <Ionicons name="calendar-outline" size={20} color="#df5ca8" />
             </View>
-            <Text style={styles.cardTitle}>Task Deadline</Text>
+            <Text style={[styles.cardTitle, { color: theme.addTaskCardTitle }]}>Task Deadline</Text>
           </View>
 
           {Platform.OS === 'web' ? (
             <View style={styles.deadlineRow}>
               <View style={styles.deadlineBlock}>
-                <Text style={styles.fieldLabel}>Date</Text>
-                <View style={styles.inputWithIcon}>
+                <Text style={[styles.fieldLabel, { color: theme.addTaskFieldLabel }]}>Date</Text>
+                <View style={[styles.inputWithIcon, { backgroundColor: theme.addTaskInputBg, borderColor: theme.addTaskInputBorder }]}>
                   <input
                     type="date"
                     value={deadline}
@@ -271,7 +273,7 @@ export default function AddTaskScreen() {
                       outline: 'none',
                       background: 'transparent',
                       fontSize: 15,
-                      color: '#111',
+                      color: theme.addTaskInputText,
                       fontFamily: 'inherit',
                       padding: '10px 0',
                     }}
@@ -280,8 +282,8 @@ export default function AddTaskScreen() {
               </View>
 
               <View style={styles.deadlineBlock}>
-                <Text style={styles.fieldLabel}>Time</Text>
-                <View style={styles.inputWithIcon}>
+                <Text style={[styles.fieldLabel, { color: theme.addTaskFieldLabel }]}>Time</Text>
+                <View style={[styles.inputWithIcon, { backgroundColor: theme.addTaskInputBg, borderColor: theme.addTaskInputBorder }]}>
                   <input
                     type="time"
                     value={time ? `${(() => {
@@ -319,13 +321,13 @@ export default function AddTaskScreen() {
             <>
               <View style={styles.deadlineRow}>
                 <View style={styles.deadlineBlock}>
-                  <Text style={styles.fieldLabel}>Date</Text>
+                  <Text style={[styles.fieldLabel, { color: theme.addTaskFieldLabel }]}>Date</Text>
 
                   <TouchableOpacity
-                    style={styles.inputWithIcon}
+                    style={[styles.inputWithIcon, { backgroundColor: theme.addTaskInputBg, borderColor: theme.addTaskInputBorder }]}
                     onPress={() => setShowDatePicker(true)}
                   >
-                    <Text style={styles.inlineInput}>
+                    <Text style={[styles.inlineInput, { color: theme.addTaskInputText }]}>
                       {deadline || 'Select date'}
                     </Text>
 
@@ -338,13 +340,13 @@ export default function AddTaskScreen() {
                 </View>
 
                 <View style={styles.deadlineBlock}>
-                  <Text style={styles.fieldLabel}>Time</Text>
+                  <Text style={[styles.fieldLabel, { color: theme.addTaskFieldLabel }]}>Time</Text>
 
                   <TouchableOpacity
-                    style={styles.inputWithIcon}
+                    style={[styles.inputWithIcon, { backgroundColor: theme.addTaskInputBg, borderColor: theme.addTaskInputBorder }]}
                     onPress={() => setShowTimePicker(true)}
                   >
-                    <Text style={styles.inlineInput}>
+                    <Text style={[styles.inlineInput, { color: theme.addTaskInputText }]}>
                       {time || 'Select time'}
                     </Text>
 
@@ -407,12 +409,12 @@ export default function AddTaskScreen() {
         </View>
 
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.addTaskCardBg, borderColor: theme.addTaskCardBorder }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.leftIconBox}>
+            <View style={[styles.leftIconBox, { backgroundColor: theme.addTaskIconBoxBg }]}>
               <Ionicons name="reload-outline" size={20} color="#df5ca8" />
             </View>
-            <Text style={styles.cardTitle}>Repeat</Text>
+            <Text style={[styles.cardTitle, { color: theme.addTaskCardTitle }]}>Repeat</Text>
           </View>
           <View style={styles.chipGrid}>
             <Chip
@@ -442,12 +444,12 @@ export default function AddTaskScreen() {
           </View>
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.addTaskCardBg, borderColor: theme.addTaskCardBorder }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.leftIconBox}>
+            <View style={[styles.leftIconBox, { backgroundColor: theme.addTaskIconBoxBg }]}>
               <Ionicons name="flag-outline" size={20} color="#df5ca8" />
             </View>
-            <Text style={styles.cardTitle}>Priority Level</Text>
+            <Text style={[styles.cardTitle, { color: theme.addTaskCardTitle }]}>Priority Level</Text>
           </View>
           <View style={styles.chipGrid}>
             <Chip
@@ -474,12 +476,12 @@ export default function AddTaskScreen() {
           </View>
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.addTaskCardBg, borderColor: theme.addTaskCardBorder }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.leftIconBox}>
+            <View style={[styles.leftIconBox, { backgroundColor: theme.addTaskIconBoxBg }]}>
               <Ionicons name="bookmark-outline" size={20} color="#df5ca8" />
             </View>
-            <Text style={styles.cardTitle}>Status</Text>
+            <Text style={[styles.cardTitle, { color: theme.addTaskCardTitle }]}>Status</Text>
           </View>
           <View style={styles.chipGrid}>
             <Chip
@@ -506,34 +508,34 @@ export default function AddTaskScreen() {
           </View>
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.addTaskCardBg, borderColor: theme.addTaskCardBorder }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.leftIconBox}>
+            <View style={[styles.leftIconBox, { backgroundColor: theme.addTaskIconBoxBg }]}>
               <Ionicons name="document-text-outline" size={20} color="#df5ca8" />
             </View>
-            <Text style={styles.cardTitle}>Note (Optional)</Text>
+            <Text style={[styles.cardTitle, { color: theme.addTaskCardTitle }]}>Note (Optional)</Text>
           </View>
           <TextInput
-            style={styles.noteInput}
+            style={[styles.noteInput, { backgroundColor: theme.addTaskNoteInputBg, borderColor: theme.addTaskNoteInputBorder, color: theme.addTaskInputText }]}
             value={note}
             onChangeText={setNote}
             multiline
             placeholder="Write a short note..."
-            placeholderTextColor="#7A6D80"
+            placeholderTextColor={theme.isDark ? '#666' : '#7A6D80'}
             textAlignVertical="top"
           />
-          <Text style={styles.countText}>{note.length}/250</Text>
+          <Text style={[styles.countText, { color: theme.addTaskCountText }]}>{note.length}/250</Text>
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.addTaskCardBg, borderColor: theme.addTaskCardBorder }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.leftIconBox}>
+            <View style={[styles.leftIconBox, { backgroundColor: theme.addTaskIconBoxBg }]}>
               <Ionicons name="notifications-outline" size={20} color="#df5ca8" />
             </View>
-            <Text style={styles.cardTitle}>Reminder</Text>
+            <Text style={[styles.cardTitle, { color: theme.addTaskCardTitle }]}>Reminder</Text>
           </View>
           <View style={styles.reminderRow}>
-            <Text style={styles.reminderText}>Add a reminder for this task</Text>
+            <Text style={[styles.reminderText, { color: theme.addTaskReminderText }]}>Add a reminder for this task</Text>
             <Switch
               value={reminder}
               onValueChange={setReminder}
@@ -677,9 +679,7 @@ const styles = StyleSheet.create({
   chip: {
     minHeight: 48,
     borderWidth: 1,
-    borderColor: '#D8D4D9',
     borderRadius: 16,
-    backgroundColor: '#fff',
     paddingHorizontal: 14,
     paddingVertical: 10,
   },

@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import { useTaskContext } from '../../../constants/src/context/TaskContext';
+import { useTheme } from '../../../constants/src/context/ThemeContext';
 
 type FilterType = 'All' | 'ToDo' | 'InProgress' | 'Completed';
 
@@ -28,6 +29,7 @@ type PlanItem = {
 export default function TodayPlanScreen() {
   const router = useRouter();
   const { tasks } = useTaskContext();
+  const { theme } = useTheme();
 
   const today = new Date();
   const todayIso = formatDateToISO(today);
@@ -119,9 +121,9 @@ export default function TodayPlanScreen() {
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={onPress}
-      style={[styles.filterChip, active && styles.activeFilterChip]}
+      style={[styles.filterChip, { backgroundColor: theme.filterBg, borderColor: theme.filterBorder }, active && { backgroundColor: theme.activeFilterBg }]}
     >
-      <Text style={[styles.filterText, active && styles.activeFilterText]}>
+      <Text style={[styles.filterText, { color: theme.text }, active && styles.activeFilterText]}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -167,8 +169,8 @@ export default function TodayPlanScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <View style={styles.topShape} />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.planContainerBg }]} edges={['top', 'left', 'right']}>
+      <View style={[styles.topShape, { backgroundColor: theme.planTopShapeBg }]} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -179,30 +181,30 @@ export default function TodayPlanScreen() {
           activeOpacity={0.8}
           onPress={() => router.back()}
         >
-          <Ionicons name="chevron-back" size={28} color="#111" />
+          <Ionicons name="chevron-back" size={28} color={theme.planTitle} />
         </TouchableOpacity>
 
-        <Text style={styles.title}>Today Plan</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.title, { color: theme.planTitle }]}>Today Plan</Text>
+        <Text style={[styles.subtitle, { color: theme.planSubtitle }]}>
           Visualize your day like a calendar and stay on track.
         </Text>
 
-        <View style={styles.dateCard}>
-          <View style={styles.dateIconWrap}>
-            <Ionicons name="calendar-outline" size={20} color="#111" />
+        <View style={[styles.dateCard, { backgroundColor: theme.dateCardBg, borderColor: theme.dateCardBorder }]}>
+          <View style={[styles.dateIconWrap, { backgroundColor: theme.dateIconWrapBg }]}>
+            <Ionicons name="calendar-outline" size={20} color={theme.planTitle} />
           </View>
 
           <View style={{ flex: 1 }}>
-            <Text style={styles.dateLabel}>Selected Date</Text>
-            <Text style={styles.dateValue}>{selectedDateLabel}</Text>
+            <Text style={[styles.dateLabel, { color: theme.dateLabel }]}>Selected Date</Text>
+            <Text style={[styles.dateValue, { color: theme.dateValue }]}>{selectedDateLabel}</Text>
           </View>
 
           <TouchableOpacity
             activeOpacity={0.85}
             onPress={openPicker}
-            style={styles.changeDateBtn}
+            style={[styles.changeDateBtn, { backgroundColor: theme.changeDateBtnBg }]}
           >
-            <Text style={styles.changeDateBtnText}>Change Date</Text>
+            <Text style={[styles.changeDateBtnText, { color: theme.changeDateBtnText }]}>Change Date</Text>
           </TouchableOpacity>
         </View>
 
@@ -215,18 +217,18 @@ export default function TodayPlanScreen() {
           />
         )}
 
-        <View style={styles.highlightCard}>
+        <View style={[styles.highlightCard, { backgroundColor: theme.highlightCardBg }]}>
           <View style={styles.highlightTopRow}>
             <View style={{ flex: 1, paddingRight: 16 }}>
-              <Text style={styles.highlightTitle}>Focus for Today</Text>
-              <Text style={styles.highlightText}>
+              <Text style={[styles.highlightTitle, { color: theme.highlightTitle }]}>Focus for Today</Text>
+              <Text style={[styles.highlightText, { color: theme.highlightText }]}>
                 Complete important tasks first, then continue practice and revision.
               </Text>
             </View>
 
-            <View style={styles.percentBadge}>
-              <Text style={styles.percentValue}>{completionPercent}%</Text>
-              <Text style={styles.percentLabel}>done</Text>
+            <View style={[styles.percentBadge, { backgroundColor: theme.percentBg }]}>
+              <Text style={[styles.percentValue, { color: theme.percentValue }]}>{completionPercent}%</Text>
+              <Text style={[styles.percentLabel, { color: theme.percentLabel }]}>done</Text>
             </View>
           </View>
 
@@ -234,33 +236,33 @@ export default function TodayPlanScreen() {
             <View
               style={[
                 styles.progressFill,
-                { width: `${Math.max(completionPercent, 6)}%` },
+                { width: `${Math.max(completionPercent, 6)}%`, backgroundColor: theme.progressFill },
               ]}
             />
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Month Calendar</Text>
+        <Text style={[styles.sectionTitle, { color: theme.planTitle }]}>Month Calendar</Text>
 
-        <View style={styles.calendarCard}>
+        <View style={[styles.calendarCard, { backgroundColor: theme.dateCardBg, borderColor: theme.dateCardBorder }]}>
           <Calendar
             current={selectedDate}
             onDayPress={(day) => setSelectedDate(day.dateString)}
             markedDates={markedDates}
             enableSwipeMonths
             theme={{
-              backgroundColor: '#FFFFFF',
-              calendarBackground: '#FFFFFF',
+              backgroundColor: theme.calendarBg,
+              calendarBackground: theme.calendarBg,
               textSectionTitleColor: '#8B5E9E',
               selectedDayBackgroundColor: '#DFA8F3',
-              selectedDayTextColor: '#111111',
+              selectedDayTextColor: theme.isDark ? '#fff' : '#111111',
               todayTextColor: '#C56FE8',
-              dayTextColor: '#111111',
-              textDisabledColor: '#D8C9DD',
+              dayTextColor: theme.text,
+              textDisabledColor: theme.isDark ? '#444' : '#D8C9DD',
               dotColor: '#C56FE8',
               selectedDotColor: '#111111',
               arrowColor: '#C56FE8',
-              monthTextColor: '#111111',
+              monthTextColor: theme.text,
               indicatorColor: '#C56FE8',
               textDayFontWeight: '600',
               textMonthFontWeight: '800',
@@ -273,7 +275,7 @@ export default function TodayPlanScreen() {
           />
         </View>
 
-        <Text style={styles.sectionTitle}>Task Status</Text>
+        <Text style={[styles.sectionTitle, { color: theme.planTitle }]}>Task Status</Text>
 
         <ScrollView
           horizontal
@@ -291,27 +293,27 @@ export default function TodayPlanScreen() {
         </ScrollView>
 
         <View style={styles.scheduleHeaderRow}>
-          <Text style={styles.sectionTitle}>Day Schedule</Text>
+          <Text style={[styles.sectionTitle, { color: theme.planTitle }]}>Day Schedule</Text>
           <Text style={styles.scheduleDateText}>{selectedDateLabel}</Text>
         </View>
 
         {filteredPlans.map((item, index) => (
           <View key={`${item.title}-${index}`} style={styles.timelineRow}>
             <View style={styles.timelineTimeWrap}>
-              <Text style={styles.timelineTime}>{item.time}</Text>
+              <Text style={[styles.timelineTime, { color: theme.timelineTime }]}>{item.time}</Text>
             </View>
 
             <View style={styles.timelineTrackWrap}>
-              <View style={styles.timelineDot} />
+              <View style={[styles.timelineDot, { backgroundColor: theme.timelineDot }]} />
               {index !== filteredPlans.length - 1 && (
-                <View style={styles.timelineLine} />
+                <View style={[styles.timelineLine, { backgroundColor: theme.timelineLine }]} />
               )}
             </View>
 
-            <View style={styles.timelineCard}>
+            <View style={[styles.timelineCard, { backgroundColor: theme.timelineCardBg, borderColor: theme.timelineCardBorder }]}>
               <View style={styles.cardTopRow}>
-                <View style={styles.iconBox}>
-                  <Ionicons name={item.icon} size={18} color="#111" />
+                <View style={[styles.iconBox, { backgroundColor: theme.iconBoxBg }]}>
+                  <Ionicons name={item.icon} size={18} color={theme.planTitle} />
                 </View>
 
                 <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
@@ -326,16 +328,16 @@ export default function TodayPlanScreen() {
                 </View>
               </View>
 
-              <Text style={styles.planTitle}>{item.title}</Text>
-              <Text style={styles.planNote}>{item.note}</Text>
+              <Text style={[styles.planTitle, { color: theme.planTitleText }]}>{item.title}</Text>
+              <Text style={[styles.planNote, { color: theme.planNoteText }]}>{item.note}</Text>
             </View>
           </View>
         ))}
 
         {filteredPlans.length === 0 && (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No tasks found</Text>
-            <Text style={styles.emptyText}>
+          <View style={[styles.emptyCard, { backgroundColor: theme.emptyCardBg, borderColor: theme.emptyCardBorder }]}>
+            <Text style={[styles.emptyTitle, { color: theme.emptyTitle }]}>No tasks found</Text>
+            <Text style={[styles.emptyText, { color: theme.emptyText }]}>
               There are no tasks available for this date or status right now.
             </Text>
           </View>
@@ -343,7 +345,7 @@ export default function TodayPlanScreen() {
 
         <TouchableOpacity
           activeOpacity={0.9}
-          style={styles.primaryBtn}
+          style={[styles.primaryBtn, { backgroundColor: theme.primaryBtnBg, borderColor: theme.primaryBtnBorder }]}
           onPress={() => router.push('/(tabs)/home/add-task')}
         >
           <Text style={styles.primaryBtnText}>Add New Task</Text>

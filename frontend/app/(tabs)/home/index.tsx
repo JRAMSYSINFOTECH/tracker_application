@@ -259,7 +259,7 @@ export default function DashboardScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.bg }]}>
-      <View style={styles.topBg} />
+      <View style={[styles.topBg, { backgroundColor: theme.topBg }]} />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -268,19 +268,19 @@ export default function DashboardScreen() {
       >
         <View style={styles.headerRow}>
           <TouchableOpacity
-            style={styles.menuButton}
+            style={[styles.menuButton, { backgroundColor: theme.menuButtonBg, borderColor: theme.menuButtonBorder }]}
             onPress={() => {
               setDrawerVisible(true);
               setQuickActionsVisible(false);
             }}
             activeOpacity={0.8}
           >
-            <Ionicons name="menu-outline" size={24} color="#111" />
+            <Ionicons name="menu-outline" size={24} color={theme.helloText} />
           </TouchableOpacity>
 
           <View style={styles.headerCenter}>
-            <Text style={styles.hello}>Hi, {USER_NAME} 👋</Text>
-            <Text style={styles.subText}>Let's plan your day smartly</Text>
+            <Text style={[styles.hello, { color: theme.helloText }]}>Hi, {USER_NAME} 👋</Text>
+            <Text style={[styles.subText, { color: theme.subText }]}>Let's plan your day smartly</Text>
           </View>
 
           <TouchableOpacity 
@@ -298,64 +298,64 @@ export default function DashboardScreen() {
 
         <View style={styles.statsGrid}>
           <TouchableOpacity
-            style={[styles.statCard, styles.totalCard]}
+            style={[styles.statCard, { backgroundColor: theme.statTotal, borderColor: theme.border }]}
             onPress={() => setSelectedFilter('all')}
             activeOpacity={0.85}
           >
-            <Text style={styles.statNumber}>{totalCount}</Text>
-            <Text style={styles.statLabel}>Total Tasks</Text>
+            <Text style={[styles.statNumber, { color: theme.statNumber }]}>{totalCount}</Text>
+            <Text style={[styles.statLabel, { color: theme.statLabel }]}>Total Tasks</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.statCard, styles.completedCard]}
+            style={[styles.statCard, { backgroundColor: theme.statCompleted, borderColor: theme.border }]}
             onPress={() => setSelectedFilter('completed')}
             activeOpacity={0.85}
           >
-            <Text style={styles.statNumber}>{completedCount}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
+            <Text style={[styles.statNumber, { color: theme.statNumber }]}>{completedCount}</Text>
+            <Text style={[styles.statLabel, { color: theme.statLabel }]}>Completed</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.statCard, styles.pendingCard]}
+            style={[styles.statCard, { backgroundColor: theme.statPending, borderColor: theme.border }]}
             onPress={() => setSelectedFilter('pending')}
             activeOpacity={0.85}
           >
-            <Text style={styles.statNumber}>{pendingCount}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
+            <Text style={[styles.statNumber, { color: theme.statNumber }]}>{pendingCount}</Text>
+            <Text style={[styles.statLabel, { color: theme.statLabel }]}>Pending</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.statCard, styles.missedCard]}
+            style={[styles.statCard, { backgroundColor: theme.statMissed, borderColor: theme.border }]}
             onPress={() => setSelectedFilter('missed')}
             activeOpacity={0.85}
           >
-            <Text style={styles.statNumber}>{missedCount}</Text>
-            <Text style={styles.statLabel}>Missed</Text>
+            <Text style={[styles.statNumber, { color: theme.statNumber }]}>{missedCount}</Text>
+            <Text style={[styles.statLabel, { color: theme.statLabel }]}>Missed</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.progressCard}>
+        <View style={[styles.progressCard, { backgroundColor: theme.progressCardBg, borderColor: theme.border }]}>
           <View style={styles.progressHeader}>
             <View>
-              <Text style={styles.progressTitle}>Today's Progress</Text>
-              <Text style={styles.progressSubText}>
+              <Text style={[styles.progressTitle, { color: theme.progressTitle }]}>Today's Progress</Text>
+              <Text style={[styles.progressSubText, { color: theme.progressSubText }]}>
                 {completedCount} of {totalCount} tasks completed
               </Text>
             </View>
 
-            <View style={styles.progressPercentBadge}>
+            <View style={[styles.progressPercentBadge, { backgroundColor: theme.progressBadgeBg }]}>
               <Text style={styles.progressPercentText}>{progressPercent}%</Text>
             </View>
           </View>
 
-          <View style={styles.progressBarTrack}>
+          <View style={[styles.progressBarTrack, { backgroundColor: theme.progressBarTrack }]}>
             <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
           </View>
         </View>
 
-        <View style={styles.calendarCard}>
+        <View style={[styles.calendarCard, { backgroundColor: theme.calendarCardBg, borderColor: theme.border }]}>
           <View style={styles.calendarHeader}>
-            <Text style={styles.calendarTitle}>Calendar</Text>
+            <Text style={[styles.calendarTitle, { color: theme.calendarTitle }]}>Calendar</Text>
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => setMonthModalVisible(true)}
@@ -372,14 +372,14 @@ export default function DashboardScreen() {
             {calendarDays.map((item, index) => (
               <TouchableOpacity
                 key={`${item.date}-${index}`}
-                style={[styles.dateChip, item.active && styles.dateChipActive]}
+                style={[styles.dateChip, { backgroundColor: theme.dateChipBg, borderColor: theme.dateChipBorder }, item.active && styles.dateChipActive]}
                 activeOpacity={0.8}
                 onPress={() => setSelectedDate(item.fullDate)}
               >
-                <Text style={[styles.dayText, item.active && styles.dateChipTextActive]}>
+                <Text style={[styles.dayText, { color: theme.subText }, item.active && styles.dateChipTextActive]}>
                   {item.day}
                 </Text>
-                <Text style={[styles.dateText, item.active && styles.dateChipTextActive]}>
+                <Text style={[styles.dateText, { color: theme.text }, item.active && styles.dateChipTextActive]}>
                   {item.date}
                 </Text>
               </TouchableOpacity>
@@ -387,83 +387,71 @@ export default function DashboardScreen() {
           </ScrollView>
         </View>
 
-        <View style={styles.mainCard}>
+        <View style={[styles.mainCard, { backgroundColor: theme.mainCardBg }]}>
           <View style={styles.mainCardHeader}>
             <View style={styles.mainTitleWrap}>
-              <Text style={styles.cardTitle}>Today's Plan</Text>
-              <Text style={styles.cardDate}>{displaySelectedDate}</Text>
+              <Text style={[styles.cardTitle, { color: theme.cardTitleText }]}>Today's Plan</Text>
+              <Text style={[styles.cardDate, { color: theme.cardDateText }]}>{displaySelectedDate}</Text>
             </View>
 
             <View style={styles.actionPillsRow}>
               <TouchableOpacity
-                style={styles.aiTaskPill}
+                style={[styles.aiTaskPill, { backgroundColor: theme.aiPillBg }]}
                 activeOpacity={0.85}
                 onPress={() => navigateWithClose('/(tabs)/home/AISchedulerScreen')}
               >
-                <Ionicons name="sparkles-outline" size={14} color="#111" />
-                <Text style={styles.aiTaskPillText}>Generate Plan</Text>
+                <Ionicons name="sparkles-outline" size={14} color={theme.aiPillText} />
+                <Text style={[styles.aiTaskPillText, { color: theme.aiPillText }]}>Generate Plan</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.addTaskPill}
+                style={[styles.addTaskPill, { backgroundColor: theme.addPillBg }]}
                 activeOpacity={0.85}
                 onPress={() => navigateWithClose('/(tabs)/home/add-task')}
               >
-                <Text style={styles.addTaskPillText}>+ Add</Text>
+                <Text style={[styles.addTaskPillText, { color: theme.addPillText }]}>+ Add</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.filterRow}>
             <TouchableOpacity
-              style={[styles.filterChip, selectedFilter === 'all' && styles.filterChipActive]}
+              style={[styles.filterChip, { backgroundColor: theme.filterChipBg, borderColor: theme.filterChipBorder }, selectedFilter === 'all' && styles.filterChipActive]}
               onPress={() => setSelectedFilter('all')}
             >
-              <Text style={[styles.filterText, selectedFilter === 'all' && styles.filterTextActive]}>
+              <Text style={[styles.filterText, { color: theme.filterText }, selectedFilter === 'all' && styles.filterTextActive]}>
                 All
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.filterChip, selectedFilter === 'pending' && styles.filterChipActive]}
+              style={[styles.filterChip, { backgroundColor: theme.filterChipBg, borderColor: theme.filterChipBorder }, selectedFilter === 'pending' && styles.filterChipActive]}
               onPress={() => setSelectedFilter('pending')}
             >
               <Text
-                style={[styles.filterText, selectedFilter === 'pending' && styles.filterTextActive]}
+                style={[styles.filterText, { color: theme.filterText }, selectedFilter === 'pending' && styles.filterTextActive]}
               >
                 Pending
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.filterChip,
-                selectedFilter === 'completed' && styles.filterChipActive,
-              ]}
+              style={[styles.filterChip, { backgroundColor: theme.filterChipBg, borderColor: theme.filterChipBorder }, selectedFilter === 'completed' && styles.filterChipActive]}
               onPress={() => setSelectedFilter('completed')}
             >
               <Text
-                style={[
-                  styles.filterText,
-                  selectedFilter === 'completed' && styles.filterTextActive,
-                ]}
+                style={[styles.filterText, { color: theme.filterText }, selectedFilter === 'completed' && styles.filterTextActive]}
               >
                 Completed
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.filterChip,
-                selectedFilter === 'missed' && styles.filterChipActive,
-              ]}
+              style={[styles.filterChip, { backgroundColor: theme.filterChipBg, borderColor: theme.filterChipBorder }, selectedFilter === 'missed' && styles.filterChipActive]}
               onPress={() => setSelectedFilter('missed')}
             >
               <Text
-                style={[
-                  styles.filterText,
-                  selectedFilter === 'missed' && styles.filterTextActive,
-                ]}
+                style={[styles.filterText, { color: theme.filterText }, selectedFilter === 'missed' && styles.filterTextActive]}
               >
                 Missed
               </Text>
@@ -473,10 +461,10 @@ export default function DashboardScreen() {
 
         <View style={styles.taskList}>
           {filteredTasks.map((task) => (
-            <View key={task.id} style={styles.taskCard}>
+            <View key={task.id} style={[styles.taskCard, { backgroundColor: theme.taskCardBg, borderColor: theme.taskCardBorder }]}>
               <View style={{ flex: 1, paddingRight: 12 }}>
-                <Text style={styles.taskTitle}>{task.title}</Text>
-                <Text style={styles.taskTime}>{task.time}</Text>
+                <Text style={[styles.taskTitle, { color: theme.taskTitle }]}>{task.title}</Text>
+                <Text style={[styles.taskTime, { color: theme.taskTime }]}>{task.time}</Text>
               </View>
 
               <View
@@ -504,14 +492,14 @@ export default function DashboardScreen() {
           ))}
 
           {filteredTasks.length === 0 && (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>
+            <View style={[styles.emptyCard, { backgroundColor: theme.emptyCardBg, borderColor: theme.emptyCardBorder }]}>
+              <Text style={[styles.emptyTitle, { color: theme.emptyTitle }]}>
                 {selectedFilter === 'missed' ? 'No missed tasks 🎉' :
                  selectedFilter === 'completed' ? 'No completed tasks yet' :
                  selectedFilter === 'pending' ? 'No pending tasks' :
                  'No tasks yet'}
               </Text>
-              <Text style={styles.emptyText}>
+              <Text style={[styles.emptyText, { color: theme.emptyText }]}>
                 {selectedFilter === 'missed'
                   ? 'Great job! You have no missed tasks.'
                   : 'Try adding a new task using the + Add button.'}
@@ -521,12 +509,12 @@ export default function DashboardScreen() {
 
         </View>
 
-        <View style={styles.tipCard}>
+        <View style={[styles.tipCard, { backgroundColor: theme.tipCardBg, borderColor: theme.tipCardBorder }]}>
           <View style={styles.tipHeader}>
-            <Ionicons name="bulb-outline" size={18} color="#111" />
-            <Text style={styles.tipTitle}>Productivity Tip</Text>
+            <Ionicons name="bulb-outline" size={18} color={theme.tipTitle} />
+            <Text style={[styles.tipTitle, { color: theme.tipTitle }]}>Productivity Tip</Text>
           </View>
-          <Text style={styles.tipText}>
+          <Text style={[styles.tipText, { color: theme.tipText }]}>
             Finish your highest-priority task first before switching to smaller tasks.
           </Text>
         </View>
@@ -544,7 +532,7 @@ export default function DashboardScreen() {
             onPress={() => setMonthModalVisible(false)}
           />
 
-          <View style={styles.modalSheet}>
+          <View style={[styles.modalSheet, { backgroundColor: theme.modalSheetBg }]}>
             <View style={styles.modalHandle} />
 
             <View style={styles.modalHeader}>
@@ -556,10 +544,10 @@ export default function DashboardScreen() {
                   setSelectedDate(prevMonth);
                 }}
               >
-                <Ionicons name="chevron-back" size={22} color="#111" />
+                <Ionicons name="chevron-back" size={22} color={theme.text} />
               </TouchableOpacity>
 
-              <Text style={styles.modalTitle}>
+              <Text style={[styles.modalTitle, { color: theme.modalTitle }]}>
                 {new Intl.DateTimeFormat('en-GB', {
                   month: 'long',
                   year: 'numeric',
@@ -574,13 +562,13 @@ export default function DashboardScreen() {
                   setSelectedDate(nextMonth);
                 }}
               >
-                <Ionicons name="chevron-forward" size={22} color="#111" />
+                <Ionicons name="chevron-forward" size={22} color={theme.text} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.weekHeader}>
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                <Text key={day} style={styles.weekHeaderText}>
+                <Text key={day} style={[styles.weekHeaderText, { color: theme.weekHeaderText }]}>
                   {day}
                 </Text>
               ))}
@@ -604,7 +592,8 @@ export default function DashboardScreen() {
                     <Text
                       style={[
                         styles.dayNumber,
-                        !item.currentMonth && styles.otherMonthText,
+                        { color: theme.dayNumber },
+                        !item.currentMonth && { color: theme.otherMonthText },
                         item.isSelected && styles.selectedDayText,
                         item.isToday && !item.isSelected && styles.todayDayText,
                       ]}
@@ -620,22 +609,22 @@ export default function DashboardScreen() {
             <View style={styles.legendRow}>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: '#b144db' }]} />
-                <Text style={styles.legendText}>Has tasks</Text>
+                <Text style={[styles.legendText, { color: theme.legendText }]}>Has tasks</Text>
               </View>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: '#d8a9f2' }]} />
-                <Text style={styles.legendText}>Selected date</Text>
+                <Text style={[styles.legendText, { color: theme.legendText }]}>Selected date</Text>
               </View>
               <View style={styles.legendItem}>
                 <View style={[styles.legendDot, { backgroundColor: '#d8eef7' }]} />
-                <Text style={styles.legendText}>Today</Text>
+                <Text style={[styles.legendText, { color: theme.legendText }]}>Today</Text>
               </View>
             </View>
 
-            <View style={styles.selectedTasksCard}>
+            <View style={[styles.selectedTasksCard, { backgroundColor: theme.selectedTasksBg, borderColor: theme.selectedTasksBorder }]}>
               <View style={styles.selectedTasksHeader}>
-                <Text style={styles.selectedTasksTitle}>Selected Day</Text>
-                <Text style={styles.selectedTasksDate}>{formattedSelectedDate}</Text>
+                <Text style={[styles.selectedTasksTitle, { color: theme.selectedTasksTitle }]}>Selected Day</Text>
+                <Text style={[styles.selectedTasksDate, { color: theme.selectedTasksDate }]}>{formattedSelectedDate}</Text>
                 <View style={styles.selectedTasksCount}>
                   <Text style={styles.selectedTasksCountText}>
                     {selectedDateTasks.length} Tasks
@@ -645,10 +634,10 @@ export default function DashboardScreen() {
 
               {selectedDateTasks.length > 0 ? (
                 selectedDateTasks.map((task) => (
-                  <View key={task.id} style={styles.modalTaskRow}>
+                  <View key={task.id} style={[styles.modalTaskRow, { borderBottomColor: theme.modalTaskBorder }]}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.modalTaskTitle}>{task.title}</Text>
-                      <Text style={styles.modalTaskTime}>{task.time}</Text>
+                      <Text style={[styles.modalTaskTitle, { color: theme.modalTaskTitle }]}>{task.title}</Text>
+                      <Text style={[styles.modalTaskTime, { color: theme.modalTaskTime }]}>{task.time}</Text>
                     </View>
 
                     <View
@@ -674,8 +663,8 @@ export default function DashboardScreen() {
                 ))
               ) : (
                 <View style={styles.emptyModalTasks}>
-                  <Text style={styles.emptyTitle}>No tasks</Text>
-                  <Text style={styles.emptyText}>
+                  <Text style={[styles.emptyTitle, { color: theme.emptyTitle }]}>No tasks</Text>
+                  <Text style={[styles.emptyText, { color: theme.emptyText }]}>
                     No tasks available on this selected date.
                   </Text>
                 </View>
@@ -698,7 +687,7 @@ export default function DashboardScreen() {
           <Pressable style={styles.overlayBackdrop} onPress={() => setDrawerVisible(false)} />
 
           <View style={styles.drawerWrap}>
-            <View style={styles.drawer}>
+            <View style={[styles.drawer, { backgroundColor: theme.drawerBg }]}>
               <View style={styles.drawerTop}>
                 <View style={styles.drawerHeader}>
                   <View style={{ width: 28, height: 28 }} />
@@ -738,18 +727,18 @@ export default function DashboardScreen() {
                 {menuItems.map((item, index) => (
                   <TouchableOpacity
                     key={index}
-                    style={[styles.menuItem, item.active && styles.menuItemActive]}
+                    style={[styles.menuItem, item.active ? { backgroundColor: theme.menuItemActiveBg } : { backgroundColor: theme.menuItemBg }]}
                     activeOpacity={0.85}
                     onPress={item.onPress}
                   >
-                    <View style={styles.menuIconWrap}>
+                    <View style={[styles.menuIconWrap, { backgroundColor: theme.menuIconWrapBg }]}>
                       <Ionicons
                         name={item.icon as any}
                         size={19}
                         color={item.active ? '#a14ccf' : '#a861cf'}
                       />
                     </View>
-                    <Text style={[styles.menuText, item.active && styles.menuTextActive]}>
+                    <Text style={[styles.menuText, { color: theme.menuText }, item.active && styles.menuTextActive]}>
                       {item.title}
                     </Text>
                   </TouchableOpacity>
@@ -765,16 +754,16 @@ export default function DashboardScreen() {
           style={styles.quickActionOverlay}
           onPress={() => setQuickActionsVisible(false)}
         >
-          <View style={styles.quickActionsMenu}>
+          <View style={[styles.quickActionsMenu, { backgroundColor: theme.quickActionsBg, borderColor: theme.quickActionsBorder }]}>
             <TouchableOpacity
               style={styles.quickActionItem}
               activeOpacity={0.85}
               onPress={() => navigateWithClose('/(tabs)/home/add-task')}
             >
-              <View style={styles.quickActionIcon}>
+              <View style={[styles.quickActionIcon, { backgroundColor: theme.quickActionIconBg }]}>
                 <Ionicons name="add-circle-outline" size={18} color="#a14ccf" />
               </View>
-              <Text style={styles.quickActionText}>Add Task</Text>
+              <Text style={[styles.quickActionText, { color: theme.quickActionText }]}>Add Task</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -782,10 +771,10 @@ export default function DashboardScreen() {
               activeOpacity={0.85}
               onPress={() => navigateWithClose('/(tabs)/home/today-plan')}
             >
-              <View style={styles.quickActionIcon}>
+              <View style={[styles.quickActionIcon, { backgroundColor: theme.quickActionIconBg }]}>
                 <Ionicons name="calendar-outline" size={18} color="#a14ccf" />
               </View>
-              <Text style={styles.quickActionText}>Today's Plan</Text>
+              <Text style={[styles.quickActionText, { color: theme.quickActionText }]}>Today's Plan</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -793,10 +782,10 @@ export default function DashboardScreen() {
               activeOpacity={0.85}
               onPress={() => navigateWithClose('/(tabs)/tasks')}
             >
-              <View style={styles.quickActionIcon}>
+              <View style={[styles.quickActionIcon, { backgroundColor: theme.quickActionIconBg }]}>
                 <Ionicons name="list-outline" size={18} color="#a14ccf" />
               </View>
-              <Text style={styles.quickActionText}>Tasks</Text>
+              <Text style={[styles.quickActionText, { color: theme.quickActionText }]}>Tasks</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -804,10 +793,10 @@ export default function DashboardScreen() {
               activeOpacity={0.85}
               onPress={() => navigateWithClose('/(tabs)/home/AISchedulerScreen')}
             >
-              <View style={styles.quickActionIcon}>
+              <View style={[styles.quickActionIcon, { backgroundColor: theme.quickActionIconBg }]}>
                 <Ionicons name="sparkles-outline" size={18} color="#a14ccf" />
               </View>
-              <Text style={styles.quickActionText}>AI Scheduler</Text>
+              <Text style={[styles.quickActionText, { color: theme.quickActionText }]}>AI Scheduler</Text>
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -828,7 +817,7 @@ export default function DashboardScreen() {
         />
       </TouchableOpacity>
 
-      <View style={styles.fabLabelWrap}>
+      <View style={[styles.fabLabelWrap, { backgroundColor: theme.fabLabelBg, borderColor: theme.fabLabelBorder }]}>
         <Text style={styles.fabLabel}>AI Plan</Text>
       </View>
     </View>
