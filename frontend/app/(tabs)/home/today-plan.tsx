@@ -94,16 +94,16 @@ export default function TodayPlanScreen() {
       marked[item.date] = {
         ...(marked[item.date] || {}),
         marked: true,
-        dotColor: '#C56FE8',
+        dotColor: theme.calendarDot,
       };
     });
 
     marked[selectedDate] = {
       ...(marked[selectedDate] || {}),
       selected: true,
-      selectedColor: '#DFA8F3',
+      selectedColor: theme.calendarSelectedBg,
       marked: true,
-      dotColor: '#111',
+      dotColor: theme.text,
     };
 
     return marked;
@@ -232,7 +232,7 @@ export default function TodayPlanScreen() {
             </View>
           </View>
 
-          <View style={styles.progressTrack}>
+          <View style={[styles.progressTrack, { backgroundColor: theme.progressTrack }]}>
             <View
               style={[
                 styles.progressFill,
@@ -253,17 +253,17 @@ export default function TodayPlanScreen() {
             theme={{
               backgroundColor: theme.calendarBg,
               calendarBackground: theme.calendarBg,
-              textSectionTitleColor: '#8B5E9E',
-              selectedDayBackgroundColor: '#DFA8F3',
+              textSectionTitleColor: theme.calendarHeaderText,
+              selectedDayBackgroundColor: theme.calendarSelectedBg,
               selectedDayTextColor: theme.isDark ? '#fff' : '#111111',
-              todayTextColor: '#C56FE8',
+              todayTextColor: theme.calendarTodayText,
               dayTextColor: theme.text,
-              textDisabledColor: theme.isDark ? '#444' : '#D8C9DD',
-              dotColor: '#C56FE8',
-              selectedDotColor: '#111111',
-              arrowColor: '#C56FE8',
+              textDisabledColor: theme.calendarDisabledText,
+              dotColor: theme.calendarDot,
+              selectedDotColor: theme.text,
+              arrowColor: theme.primary,
               monthTextColor: theme.text,
-              indicatorColor: '#C56FE8',
+              indicatorColor: theme.primary,
               textDayFontWeight: '600',
               textMonthFontWeight: '800',
               textDayHeaderFontWeight: '700',
@@ -294,7 +294,7 @@ export default function TodayPlanScreen() {
 
         <View style={styles.scheduleHeaderRow}>
           <Text style={[styles.sectionTitle, { color: theme.planTitle }]}>Day Schedule</Text>
-          <Text style={styles.scheduleDateText}>{selectedDateLabel}</Text>
+          <Text style={[styles.scheduleDateText, { color: theme.planScheduleDate }]}>{selectedDateLabel}</Text>
         </View>
 
         {filteredPlans.map((item, index) => (
@@ -348,7 +348,7 @@ export default function TodayPlanScreen() {
           style={[styles.primaryBtn, { backgroundColor: theme.primaryBtnBg, borderColor: theme.primaryBtnBorder }]}
           onPress={() => router.push('/(tabs)/home/add-task')}
         >
-          <Text style={styles.primaryBtnText}>Add New Task</Text>
+          <Text style={[styles.primaryBtnText, { color: theme.planPrimaryBtnText }]}>Add New Task</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -376,7 +376,6 @@ function formatDateForDisplay(date: Date) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   topShape: {
     position: 'absolute',
@@ -384,7 +383,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: 190,
     height: 150,
-    backgroundColor: '#F4CCFF',
     borderBottomLeftRadius: 95,
     borderBottomRightRadius: 95,
     zIndex: 0,
@@ -415,9 +413,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   dateCard: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E9D9EE',
     borderRadius: 24,
     padding: 16,
     marginBottom: 16,
@@ -428,7 +424,6 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#F4CCFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -455,7 +450,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   highlightCard: {
-    backgroundColor: '#F4CCFF',
     borderRadius: 24,
     padding: 18,
     marginBottom: 20,
@@ -497,13 +491,11 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 10,
-    backgroundColor: '#F5E7FA',
     borderRadius: 10,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#111',
     borderRadius: 10,
   },
   sectionTitle: {
@@ -513,9 +505,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   calendarCard: {
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#E9D9EE',
     borderRadius: 24,
     padding: 10,
     marginBottom: 20,
@@ -539,7 +529,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   activeFilterChip: {
-    backgroundColor: '#F4CCFF',
     borderColor: '#111',
   },
   filterText: {
@@ -559,7 +548,6 @@ const styles = StyleSheet.create({
   },
   scheduleDateText: {
     fontSize: 13,
-    color: '#B05FD2',
     fontWeight: '700',
   },
   timelineRow: {
@@ -585,7 +573,6 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#111',
     marginTop: 14,
     zIndex: 2,
   },
@@ -594,15 +581,12 @@ const styles = StyleSheet.create({
     top: 28,
     width: 2,
     height: '100%',
-    backgroundColor: '#DDD6E3',
   },
   timelineCard: {
     flex: 1,
-    backgroundColor: '#FCF7FD',
     borderRadius: 24,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E9D9EE',
     marginLeft: 6,
   },
   cardTopRow: {
@@ -615,7 +599,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F4CCFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -688,7 +671,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   primaryBtnText: {
-    color: '#D094E8',
     fontSize: 16,
     fontWeight: '700',
   },

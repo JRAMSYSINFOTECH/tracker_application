@@ -1,7 +1,13 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, ViewStyle } from 'react-native';
+import { colors } from '../theme/colors';
 
-export default function TopCurve() {
-  return <View style={styles.topShape} />;
+type TopCurveProps = {
+  color?: string;
+  style?: ViewStyle;
+};
+
+export default function TopCurve({ color = colors.topShape, style }: TopCurveProps) {
+  return <View style={[styles.topShape, { backgroundColor: color }, style]} />;
 }
 
 const styles = StyleSheet.create({
@@ -11,7 +17,6 @@ const styles = StyleSheet.create({
     left: 0,
     width: 240,
     height: 220,
-    backgroundColor: '#f4c6f7',
     borderBottomRightRadius: 120,
   },
 });

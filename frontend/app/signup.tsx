@@ -448,7 +448,7 @@ const styles = StyleSheet.create({
   activeGender: {
     borderWidth: 2,
     borderColor: colors.accent,
-    backgroundColor: '#f7d7ff',
+    backgroundColor: colors.softPink,
   },
   genderText: {
     color: '#000',

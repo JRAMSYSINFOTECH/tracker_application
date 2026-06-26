@@ -70,7 +70,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.sectionTitle }]}>Account</Text>
           <View style={[styles.profileCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <View style={styles.profileAvatar}>
+            <View style={[styles.profileAvatar, { backgroundColor: theme.primary }]}>
               {user?.profile_pic ? (
                 <Image source={{ uri: user.profile_pic }} style={styles.avatarImage} />
               ) : (
@@ -86,7 +86,7 @@ export default function SettingsScreen() {
               onPress={() => router.push('/(tabs)/home/edit-profile')}
               activeOpacity={0.7}
             >
-              <Ionicons name="create-outline" size={22} color="#a14ccf" />
+              <Ionicons name="create-outline" size={22} color={theme.primary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -190,7 +190,6 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#c68be9',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -16,6 +16,7 @@ import {
 
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../../constants/src/context/AuthContext';
+import { useTheme } from '../../../constants/src/context/ThemeContext';
 import TopCurve from '../../../constants/src/components/TopCurve';
 import { commonStyles } from '../../../constants/src/theme/commonStyles';
 import { dashboardApi, TodayPlanItem } from '../../../services/api';
@@ -134,10 +135,10 @@ function addMinutes(date: Date, mins: number) {
 }
 
 function getPriorityColor(p: string | null) {
-  return p === 'high' ? '#E91E63' : p === 'medium' ? '#FF9800' : p === 'low' ? '#4CAF50' : '#9E9E9E';
+  return p === 'high' ? '#6366f1' : p === 'medium' ? '#FF9800' : p === 'low' ? '#4CAF50' : '#9E9E9E';
 }
 function getPriorityBg(p: string | null) {
-  return p === 'high' ? '#FDE8EF' : p === 'medium' ? '#FFF3E0' : p === 'low' ? '#E8F5E9' : '#F5F5F5';
+  return p === 'high' ? '#eef2ff' : p === 'medium' ? '#FFF3E0' : p === 'low' ? '#E8F5E9' : '#F5F5F5';
 }
 
 // ─── Reschedule Modal ─────────────────────────────────────────────────────────
@@ -152,6 +153,7 @@ function RescheduleModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { theme } = useTheme();
   if (!pending) return null;
   const { item, newStart, newEnd, analysis } = pending;
   const newTimeLabel = `${newStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })} – ${newEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`;
@@ -168,9 +170,9 @@ function RescheduleModal({
               "{item.task.title}"
             </Text>
             <View style={mStyles.timeRow}>
-              <View style={mStyles.timePill}>
-                <Ionicons name="time-outline" size={14} color="#a855f7" />
-                <Text style={mStyles.timePillText}>{newTimeLabel}</Text>
+              <View style={[mStyles.timePill, { backgroundColor: theme.aiHintBg }]}>
+                <Ionicons name="time-outline" size={14} color={theme.primary} />
+                <Text style={[mStyles.timePillText, { color: theme.aiHintText }]}>{newTimeLabel}</Text>
               </View>
             </View>
           </View>
@@ -226,7 +228,7 @@ function RescheduleModal({
               <Text style={mStyles.cancelBtnText}>Keep Original</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[mStyles.confirmBtn, analysis.recommendation === 'keep' && mStyles.confirmBtnWarn]}
+              style={[mStyles.confirmBtn, { backgroundColor: theme.aiConfirmBtn }, analysis.recommendation === 'keep' && mStyles.confirmBtnWarn]}
               onPress={onConfirm}
               activeOpacity={0.85}
             >
@@ -256,6 +258,7 @@ function DraggableCard({
   priorityColor: string;
   priorityBg: string;
 }) {
+  const { theme } = useTheme();
   const pan = useRef(new Animated.Value(0)).current;
   const [dragging, setDragging] = useState(false);
   const accumulatedDy = useRef(0);
@@ -313,7 +316,7 @@ function DraggableCard({
         style={[
           styles.taskCard,
           { borderLeftColor: priorityColor },
-          dragging && styles.taskCardDragging,
+          dragging && [styles.taskCardDragging, { backgroundColor: theme.aiDraggingCardBg }],
         ]}
       >
         {/* Drag hint */}
@@ -348,11 +351,14 @@ function DraggableCard({
               <View
                 style={[
                   styles.confidenceBarFill,
-                  { width: `${Math.round(item.confidence_score * 100)}%` as any },
+                  {
+                    width: `${Math.round(item.confidence_score * 100)}%` as any,
+                    backgroundColor: theme.aiConfidenceFill,
+                  },
                 ]}
               />
             </View>
-            <Text style={styles.confidenceText}>
+            <Text style={[styles.confidenceText, { color: theme.aiConfidenceText }]}>
               {Math.round(item.confidence_score * 100)}% match
             </Text>
           </View>
@@ -366,6 +372,7 @@ function DraggableCard({
 export default function AISchedulerScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { theme } = useTheme();
 
   const [planItems, setPlanItems] = useState<TodayPlanItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -504,8 +511,8 @@ export default function AISchedulerScreen() {
   const userName = user?.name?.split(' ')[0] || 'User';
 
   return (
-    <View style={commonStyles.screen}>
-      <TopCurve />
+    <View style={[commonStyles.screen, { backgroundColor: theme.aiContainerBg }]}>
+      <TopCurve color={theme.topBg} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -515,10 +522,10 @@ export default function AISchedulerScreen() {
         {/* HEADER */}
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.hello}>Hi, {userName} 👋</Text>
-            <Text style={styles.subText}>Let's plan your day smartly</Text>
+            <Text style={[styles.hello, { color: theme.aiText }]}>Hi, {userName} 👋</Text>
+            <Text style={[styles.subText, { color: theme.aiSubText }]}>Let's plan your day smartly</Text>
           </View>
-          <View style={styles.avatar}>
+          <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
             {user?.profile_pic ? (
               <Image
                 source={{ uri: user.profile_pic }}
@@ -531,12 +538,12 @@ export default function AISchedulerScreen() {
         </View>
 
         {/* AI CARD */}
-        <View style={styles.mainCard}>
+        <View style={[styles.mainCard, { backgroundColor: theme.aiCardBg, borderWidth: 1, borderColor: theme.aiCardBorder }]}>
           <View style={styles.mainCardHeader}>
-            <Ionicons name="sparkles" size={24} color="#a855f7" />
-            <Text style={styles.cardTitle}>AI Scheduler</Text>
+            <Ionicons name="sparkles" size={24} color={theme.primary} />
+            <Text style={[styles.cardTitle, { color: theme.aiText }]}>AI Scheduler</Text>
           </View>
-          <Text style={styles.cardText}>
+          <Text style={[styles.cardText, { color: theme.aiSubText }]}>
             {hasPlan
               ? 'Your schedule is ready! Drag any task up/down to reschedule it.'
               : 'Generate your AI-powered schedule based on your tasks, priorities, and deadlines.'}
@@ -566,16 +573,16 @@ export default function AISchedulerScreen() {
         {/* LOADING */}
         {loading && (
           <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color="#a855f7" />
-            <Text style={styles.loadingText}>Loading your schedule...</Text>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <Text style={[styles.loadingText, { color: theme.aiSubText }]}>Loading your schedule...</Text>
           </View>
         )}
 
         {/* DRAG HINT BANNER */}
         {!loading && hasPlan && planItems.length > 0 && (
-          <View style={styles.hintBanner}>
-            <Ionicons name="hand-left-outline" size={18} color="#7c3aed" />
-            <Text style={styles.hintText}>
+          <View style={[styles.hintBanner, { backgroundColor: theme.aiHintBg }]}>
+            <Ionicons name="hand-left-outline" size={18} color={theme.primary} />
+            <Text style={[styles.hintText, { color: theme.aiHintText }]}>
               Hold & drag a card up/down to reschedule. AI will show impact before confirming.
             </Text>
           </View>
@@ -585,8 +592,8 @@ export default function AISchedulerScreen() {
         {!loading && hasPlan && planItems.length > 0 && (
           <>
             <View style={styles.sectionRow}>
-              <Text style={styles.sectionTitle}>Today's Schedule</Text>
-              <Text style={styles.taskCount}>{planItems.length} tasks</Text>
+              <Text style={[styles.sectionTitle, { color: theme.aiText }]}>Today's Schedule</Text>
+              <Text style={[styles.taskCount, { color: theme.aiTaskCountText, backgroundColor: theme.aiTaskCountBg }]}>{planItems.length} tasks</Text>
             </View>
 
             <View style={styles.timeline}>
@@ -632,38 +639,38 @@ export default function AISchedulerScreen() {
 
         {/* EMPTY STATE */}
         {!loading && !hasPlan && (
-          <View style={styles.emptyCard}>
-            <Ionicons name="calendar-outline" size={48} color="#d1d5db" />
-            <Text style={styles.emptyTitle}>No Schedule Yet</Text>
-            <Text style={styles.emptyText}>
+          <View style={[styles.emptyCard, { backgroundColor: theme.emptyCardBg, borderColor: theme.emptyCardBorder }]}>
+            <Ionicons name="calendar-outline" size={48} color={theme.subText} />
+            <Text style={[styles.emptyTitle, { color: theme.emptyTitle }]}>No Schedule Yet</Text>
+            <Text style={[styles.emptyText, { color: theme.emptyText }]}>
               Add some tasks and tap "Generate AI Plan" to create your personalized daily schedule.
             </Text>
           </View>
         )}
 
         {/* QUICK ACTIONS */}
-        <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Quick Actions</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 8, color: theme.aiText }]}>Quick Actions</Text>
         <View style={styles.grid}>
-          <TouchableOpacity style={styles.gridCard} activeOpacity={0.8} onPress={() => router.push('/(tabs)/home/add-task')}>
-            <View style={styles.iconWrap}>
-              <Ionicons name="add-circle-outline" size={26} color="#d14df0" />
+          <TouchableOpacity style={[styles.gridCard, { backgroundColor: theme.taskCardBg, borderColor: theme.taskCardBorder }]} activeOpacity={0.8} onPress={() => router.push('/(tabs)/home/add-task')}>
+            <View style={[styles.iconWrap, { backgroundColor: theme.aiIconWrapBg }]}>
+              <Ionicons name="add-circle-outline" size={26} color={theme.primary} />
             </View>
-            <Text style={styles.gridText}>Add Task</Text>
+            <Text style={[styles.gridText, { color: theme.aiText }]}>Add Task</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.gridCard} activeOpacity={0.8} onPress={() => router.push('/(tabs)/tasks')}>
-            <View style={styles.iconWrap}>
-              <Ionicons name="list-outline" size={26} color="#d14df0" />
+          <TouchableOpacity style={[styles.gridCard, { backgroundColor: theme.taskCardBg, borderColor: theme.taskCardBorder }]} activeOpacity={0.8} onPress={() => router.push('/(tabs)/tasks')}>
+            <View style={[styles.iconWrap, { backgroundColor: theme.aiIconWrapBg }]}>
+              <Ionicons name="list-outline" size={26} color={theme.primary} />
             </View>
-            <Text style={styles.gridText}>Tasks</Text>
+            <Text style={[styles.gridText, { color: theme.aiText }]}>Tasks</Text>
           </TouchableOpacity>
         </View>
 
         {/* TIP */}
-        <View style={styles.tipCard}>
+        <View style={[styles.tipCard, { backgroundColor: theme.tipCardBg, borderColor: theme.tipCardBorder }]}>
           <Ionicons name="bulb-outline" size={20} color="#f59e0b" />
           <View style={styles.tipContent}>
-            <Text style={styles.tipTitle}>Productivity Tip</Text>
-            <Text style={styles.tipText}>
+            <Text style={[styles.tipTitle, { color: theme.tipTitle }]}>Productivity Tip</Text>
+            <Text style={[styles.tipText, { color: theme.tipText }]}>
               High priority tasks and closer deadlines are scheduled first. Drag to adjust — AI will advise before confirming.
             </Text>
           </View>
@@ -711,12 +718,11 @@ const mStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#f3e8ff',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
   },
-  timePillText: { fontSize: 14, fontWeight: '700', color: '#7c3aed' },
+  timePillText: { fontSize: 14, fontWeight: '700' },
   section: { marginBottom: 14 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
   dot: { width: 10, height: 10, borderRadius: 5 },
@@ -752,7 +758,6 @@ const mStyles = StyleSheet.create({
     flex: 1,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#a855f7',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -766,15 +771,15 @@ const mStyles = StyleSheet.create({
 const styles = StyleSheet.create({
   scrollContent: { paddingHorizontal: 24, paddingTop: 95, paddingBottom: 120 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 },
-  hello: { fontSize: 28, fontWeight: '800', color: '#111', marginBottom: 4 },
-  subText: { fontSize: 15, color: '#555' },
-  avatar: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#c68be9', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  hello: { fontSize: 28, fontWeight: '800', marginBottom: 4 },
+  subText: { fontSize: 15 },
+  avatar: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarImage: { width: 52, height: 52, borderRadius: 26 },
   avatarText: { fontSize: 22, fontWeight: '700', color: '#fff' },
-  mainCard: { backgroundColor: '#f7d0fb', borderRadius: 24, padding: 22, marginBottom: 20 },
+  mainCard: { borderRadius: 24, padding: 22, marginBottom: 20 },
   mainCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
-  cardTitle: { fontSize: 22, fontWeight: '800', color: '#111' },
-  cardText: { fontSize: 15, lineHeight: 22, color: '#333', marginBottom: 18 },
+  cardTitle: { fontSize: 22, fontWeight: '800' },
+  cardText: { fontSize: 15, lineHeight: 22, marginBottom: 18 },
   primaryButton: { height: 50, borderRadius: 25, backgroundColor: '#111', alignItems: 'center', justifyContent: 'center' },
   primaryButtonDisabled: { backgroundColor: '#555' },
   primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
@@ -785,17 +790,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#ede9fe',
     borderRadius: 16,
     padding: 14,
     marginBottom: 20,
   },
-  hintText: { flex: 1, fontSize: 13, color: '#6d28d9', lineHeight: 18 },
+  hintText: { flex: 1, fontSize: 13, lineHeight: 18 },
   sectionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: '800', color: '#111', marginBottom: 14 },
+  sectionTitle: { fontSize: 20, fontWeight: '800', marginBottom: 14 },
   taskCount: {
-    fontSize: 14, fontWeight: '600', color: '#a855f7',
-    backgroundColor: '#f3e8ff', paddingHorizontal: 12, paddingVertical: 4,
+    fontSize: 14, fontWeight: '600',
+    paddingHorizontal: 12, paddingVertical: 4,
     borderRadius: 12, overflow: 'hidden', marginBottom: 14,
   },
   timeline: { marginBottom: 28 },
@@ -815,7 +819,7 @@ const styles = StyleSheet.create({
   },
   taskCardDragging: {
     shadowOpacity: 0.18, shadowRadius: 16, elevation: 10,
-    backgroundColor: '#fdf4ff', transform: [{ scale: 1.02 }],
+    transform: [{ scale: 1.02 }],
   },
   dragHintRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
   dragHint: { fontSize: 11, color: '#ccc', fontStyle: 'italic' },
@@ -827,20 +831,20 @@ const styles = StyleSheet.create({
   taskMetaText: { fontSize: 13, color: '#888' },
   confidenceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   confidenceBarBg: { flex: 1, height: 4, backgroundColor: '#f3f4f6', borderRadius: 2, overflow: 'hidden' },
-  confidenceBarFill: { height: '100%' as any, backgroundColor: '#a855f7', borderRadius: 2 },
-  confidenceText: { fontSize: 11, color: '#a855f7', fontWeight: '600' },
+  confidenceBarFill: { height: '100%' as any, borderRadius: 2 },
+  confidenceText: { fontSize: 11, fontWeight: '600' },
   // Empty state
-  emptyCard: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 20, backgroundColor: '#fafafa', borderRadius: 24, borderWidth: 1.5, borderColor: '#ececec', marginBottom: 28 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#111', marginTop: 14, marginBottom: 6 },
-  emptyText: { fontSize: 14, color: '#888', textAlign: 'center', lineHeight: 20 },
+  emptyCard: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 20, borderRadius: 24, borderWidth: 1.5, marginBottom: 28 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', marginTop: 14, marginBottom: 6 },
+  emptyText: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
   // Grid
   grid: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 28 },
-  gridCard: { width: '48%', backgroundColor: '#fff', borderRadius: 22, borderWidth: 1.5, borderColor: '#ececec', paddingVertical: 22, paddingHorizontal: 14, alignItems: 'center' },
-  iconWrap: { width: 54, height: 54, borderRadius: 27, backgroundColor: '#fdeaff', alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  gridText: { fontSize: 15, fontWeight: '700', color: '#111' },
+  gridCard: { width: '48%', borderRadius: 22, borderWidth: 1.5, paddingVertical: 22, paddingHorizontal: 14, alignItems: 'center' },
+  iconWrap: { width: 54, height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  gridText: { fontSize: 15, fontWeight: '700' },
   // Tip
-  tipCard: { flexDirection: 'row', backgroundColor: '#fff', borderWidth: 1.5, borderColor: '#ececec', borderRadius: 20, padding: 20, gap: 14, alignItems: 'flex-start' },
+  tipCard: { flexDirection: 'row', borderWidth: 1.5, borderRadius: 20, padding: 20, gap: 14, alignItems: 'flex-start' },
   tipContent: { flex: 1 },
-  tipTitle: { fontSize: 17, fontWeight: '800', color: '#111', marginBottom: 6 },
-  tipText: { fontSize: 14, lineHeight: 21, color: '#555' },
+  tipTitle: { fontSize: 17, fontWeight: '800', marginBottom: 6 },
+  tipText: { fontSize: 14, lineHeight: 21 },
 });

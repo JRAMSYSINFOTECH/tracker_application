@@ -15,12 +15,13 @@ import * as ImagePicker from 'expo-image-picker';
 import AppButton from '../../../constants/src/components/AppButton';
 import AppInput from '../../../constants/src/components/AppInput';
 import { useAuth } from '../../../constants/src/context/AuthContext';
-import { colors } from '../../../constants/src/theme/colors';
+import { useTheme } from '../../../constants/src/context/ThemeContext';
 import { commonStyles } from '../../../constants/src/theme/commonStyles';
 
 export default function EditProfileScreen() {
   const router = useRouter();
   const { user, updateProfile } = useAuth();
+  const { theme } = useTheme();
 
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
@@ -97,16 +98,16 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.header}>
+    <View style={[styles.screen, { backgroundColor: theme.editProfileBg }]}>
+      <View style={[styles.header, { backgroundColor: theme.editProfileHeaderBg, borderBottomColor: theme.editProfileHeaderBorder }]}>
         <TouchableOpacity 
-          style={styles.backButton} 
+          style={[styles.backButton, { backgroundColor: theme.editProfileBackBg }]} 
           onPress={() => router.back()}
           disabled={submitting}
         >
-          <Ionicons name="arrow-back" size={24} color="#111" />
+          <Ionicons name="arrow-back" size={24} color={theme.editProfileHeaderTitle} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <Text style={[styles.headerTitle, { color: theme.editProfileHeaderTitle }]}>Edit Profile</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -119,20 +120,20 @@ export default function EditProfileScreen() {
           {profileImage ? (
             <Image source={{ uri: profileImage }} style={styles.avatarImage} />
           ) : (
-            <View style={styles.avatarPlaceholder}>
+            <View style={[styles.avatarPlaceholder, { backgroundColor: theme.primary }]}>
               <Text style={styles.avatarPlaceholderText}>
                 {name ? name.charAt(0).toUpperCase() : 'U'}
               </Text>
             </View>
           )}
-          <View style={styles.cameraIconBadge}>
+          <View style={[styles.cameraIconBadge, { backgroundColor: theme.drawerHeaderBg }]}>
             <Ionicons name="camera" size={16} color="#fff" />
           </View>
         </TouchableOpacity>
 
         <View style={styles.photoActionsRow}>
           <TouchableOpacity onPress={pickImage} disabled={submitting}>
-            <Text style={styles.changePhotoText}>Change Photo</Text>
+            <Text style={[styles.changePhotoText, { color: theme.primary }]}>Change Photo</Text>
           </TouchableOpacity>
           {profileImage ? (
             <TouchableOpacity onPress={() => setProfileImage(null)} disabled={submitting}>
@@ -142,7 +143,7 @@ export default function EditProfileScreen() {
         </View>
 
         <View style={styles.genderContainer}>
-          <Text style={styles.genderTitle}>Gender</Text>
+          <Text style={[styles.genderTitle, { color: theme.editProfileGenderTitle }]}>Gender</Text>
           <View style={styles.genderRow}>
             {['F', 'M', 'O'].map((g) => (
               <TouchableOpacity
@@ -150,7 +151,8 @@ export default function EditProfileScreen() {
                 onPress={() => setGender(g as 'F' | 'M' | 'O')}
                 style={[
                   styles.genderCircle,
-                  gender === g && styles.activeGender,
+                  { backgroundColor: theme.editProfileGenderCircleBg },
+                  gender === g && { borderColor: theme.primary, backgroundColor: theme.primaryLight },
                 ]}
                 disabled={submitting}
                 activeOpacity={0.7}
@@ -158,7 +160,8 @@ export default function EditProfileScreen() {
                 <Text
                   style={[
                     styles.genderText,
-                    gender === g && styles.activeGenderText,
+                    { color: theme.editProfileGenderText },
+                    gender === g && { color: theme.primary },
                   ]}
                 >
                   {g}
@@ -221,7 +224,6 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#fafafa',
   },
   header: {
     flexDirection: 'row',
@@ -229,15 +231,12 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   backButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f5f5f5',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 15,
@@ -245,7 +244,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#111',
   },
   content: {
     padding: 24,
@@ -273,7 +271,6 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 55,
-    backgroundColor: '#c68be9',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -286,7 +283,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 2,
     right: 2,
-    backgroundColor: '#a14ccf',
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -302,7 +298,6 @@ const styles = StyleSheet.create({
     marginBottom: 25,
   },
   changePhotoText: {
-    color: '#a14ccf',
     fontWeight: '600',
     fontSize: 14,
   },
@@ -318,7 +313,6 @@ const styles = StyleSheet.create({
   genderTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#555',
     marginBottom: 10,
   },
   genderRow: {
@@ -329,22 +323,12 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#e8e8e8',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  activeGender: {
-    borderWidth: 2,
-    borderColor: '#a14ccf',
-    backgroundColor: '#f6ebff',
-  },
   genderText: {
-    color: '#333',
     fontSize: 16,
     fontWeight: '700',
-  },
-  activeGenderText: {
-    color: '#a14ccf',
   },
   input: {
     marginBottom: 16,

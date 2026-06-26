@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 34,
     fontWeight: '900',
-    color: '#D300FF',
+    color: '#4338ca',
     marginBottom: 25,
   },
   messageRow: {
@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   button: {
     height: 58,
     borderRadius: 30,
-    backgroundColor: '#F7CCFF',
+    backgroundColor: '#c7d2fe',
     alignItems: 'center',
     justifyContent: 'center',
     marginHorizontal: 20,

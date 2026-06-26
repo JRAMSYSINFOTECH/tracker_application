@@ -284,14 +284,14 @@ export default function DashboardScreen() {
           </View>
 
           <TouchableOpacity 
-            style={styles.avatar} 
+            style={[styles.avatar, { backgroundColor: theme.avatarBg, borderColor: theme.avatarBorder }]} 
             activeOpacity={0.8}
             onPress={() => router.push('/(tabs)/home/settings')}
           >
             {user?.profile_pic ? (
               <Image source={{ uri: user.profile_pic }} style={styles.avatarImage} />
             ) : (
-              <Text style={styles.avatarText}>{initials.charAt(0)}</Text>
+              <Text style={[styles.avatarText, { color: theme.avatarText }]}>{initials.charAt(0)}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -344,12 +344,12 @@ export default function DashboardScreen() {
             </View>
 
             <View style={[styles.progressPercentBadge, { backgroundColor: theme.progressBadgeBg }]}>
-              <Text style={styles.progressPercentText}>{progressPercent}%</Text>
+              <Text style={[styles.progressPercentText, { color: theme.progressBadgeText }]}>{progressPercent}%</Text>
             </View>
           </View>
 
           <View style={[styles.progressBarTrack, { backgroundColor: theme.progressBarTrack }]}>
-            <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+            <View style={[styles.progressBarFill, { width: `${progressPercent}%`, backgroundColor: theme.progressFill }]} />
           </View>
         </View>
 
@@ -360,7 +360,7 @@ export default function DashboardScreen() {
               activeOpacity={0.8}
               onPress={() => setMonthModalVisible(true)}
             >
-              <Text style={styles.calendarLink}>Month view</Text>
+              <Text style={[styles.calendarLink, { color: theme.calendarLink }]}>Month view</Text>
             </TouchableOpacity>
           </View>
 
@@ -372,7 +372,11 @@ export default function DashboardScreen() {
             {calendarDays.map((item, index) => (
               <TouchableOpacity
                 key={`${item.date}-${index}`}
-                style={[styles.dateChip, { backgroundColor: theme.dateChipBg, borderColor: theme.dateChipBorder }, item.active && styles.dateChipActive]}
+                style={[
+                  styles.dateChip,
+                  { backgroundColor: theme.dateChipBg, borderColor: theme.dateChipBorder },
+                  item.active && { backgroundColor: theme.dateChipActiveBg, borderColor: theme.dateChipActiveBg },
+                ]}
                 activeOpacity={0.8}
                 onPress={() => setSelectedDate(item.fullDate)}
               >
@@ -416,7 +420,11 @@ export default function DashboardScreen() {
 
           <View style={styles.filterRow}>
             <TouchableOpacity
-              style={[styles.filterChip, { backgroundColor: theme.filterChipBg, borderColor: theme.filterChipBorder }, selectedFilter === 'all' && styles.filterChipActive]}
+              style={[
+                styles.filterChip,
+                { backgroundColor: theme.filterChipBg, borderColor: theme.filterChipBorder },
+                selectedFilter === 'all' && { backgroundColor: theme.filterChipActiveBg },
+              ]}
               onPress={() => setSelectedFilter('all')}
             >
               <Text style={[styles.filterText, { color: theme.filterText }, selectedFilter === 'all' && styles.filterTextActive]}>
@@ -425,7 +433,11 @@ export default function DashboardScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.filterChip, { backgroundColor: theme.filterChipBg, borderColor: theme.filterChipBorder }, selectedFilter === 'pending' && styles.filterChipActive]}
+              style={[
+                styles.filterChip,
+                { backgroundColor: theme.filterChipBg, borderColor: theme.filterChipBorder },
+                selectedFilter === 'pending' && { backgroundColor: theme.filterChipActiveBg },
+              ]}
               onPress={() => setSelectedFilter('pending')}
             >
               <Text
@@ -436,7 +448,11 @@ export default function DashboardScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.filterChip, { backgroundColor: theme.filterChipBg, borderColor: theme.filterChipBorder }, selectedFilter === 'completed' && styles.filterChipActive]}
+              style={[
+                styles.filterChip,
+                { backgroundColor: theme.filterChipBg, borderColor: theme.filterChipBorder },
+                selectedFilter === 'completed' && { backgroundColor: theme.filterChipActiveBg },
+              ]}
               onPress={() => setSelectedFilter('completed')}
             >
               <Text
@@ -447,7 +463,11 @@ export default function DashboardScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.filterChip, { backgroundColor: theme.filterChipBg, borderColor: theme.filterChipBorder }, selectedFilter === 'missed' && styles.filterChipActive]}
+              style={[
+                styles.filterChip,
+                { backgroundColor: theme.filterChipBg, borderColor: theme.filterChipBorder },
+                selectedFilter === 'missed' && { backgroundColor: theme.filterChipActiveBg },
+              ]}
               onPress={() => setSelectedFilter('missed')}
             >
               <Text
@@ -470,19 +490,27 @@ export default function DashboardScreen() {
               <View
                 style={[
                   styles.statusBadge,
-                  task.status === 'pending' ? styles.pendingBadge
-                    : task.status === 'missed' ? styles.missedBadge
-                    : styles.completedBadge,
+                  {
+                    backgroundColor:
+                      task.status === 'pending'
+                        ? theme.pendingBadgeBg
+                        : task.status === 'missed'
+                        ? theme.missedBadgeBg
+                        : theme.completedBadgeBg,
+                  },
                 ]}
               >
                 <Text
                   style={[
                     styles.statusText,
-                    task.status === 'pending'
-                      ? styles.pendingBadgeText
-                      : task.status === 'missed'
-                      ? styles.missedBadgeText
-                      : styles.completedBadgeText,
+                    {
+                      color:
+                        task.status === 'pending'
+                          ? theme.pendingBadgeText
+                          : task.status === 'missed'
+                          ? theme.missedBadgeText
+                          : theme.completedBadgeText,
+                    },
                   ]}
                 >
                   {task.status === 'pending' ? 'Pending' : task.status === 'missed' ? 'Missed' : 'Completed'}
@@ -533,7 +561,7 @@ export default function DashboardScreen() {
           />
 
           <View style={[styles.modalSheet, { backgroundColor: theme.modalSheetBg }]}>
-            <View style={styles.modalHandle} />
+            <View style={[styles.modalHandle, { backgroundColor: theme.modalHandle }]} />
 
             <View style={styles.modalHeader}>
               <TouchableOpacity
@@ -585,8 +613,8 @@ export default function DashboardScreen() {
                   <View
                     style={[
                       styles.dayNumberWrap,
-                      item.isSelected && styles.selectedDayWrap,
-                      item.isToday && !item.isSelected && styles.todayDayWrap,
+                      item.isSelected && { backgroundColor: theme.selectedDayBg },
+                      item.isToday && !item.isSelected && { backgroundColor: theme.todayDayBg },
                     ]}
                   >
                     <Text
@@ -595,28 +623,28 @@ export default function DashboardScreen() {
                         { color: theme.dayNumber },
                         !item.currentMonth && { color: theme.otherMonthText },
                         item.isSelected && styles.selectedDayText,
-                        item.isToday && !item.isSelected && styles.todayDayText,
+                        item.isToday && !item.isSelected && { color: theme.text },
                       ]}
                     >
                       {item.label}
                     </Text>
                   </View>
-                  {item.hasTasks && <View style={styles.dot} />}
+                  {item.hasTasks && <View style={[styles.dot, { backgroundColor: theme.taskDot }]} />}
                 </TouchableOpacity>
               ))}
             </View>
 
             <View style={styles.legendRow}>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#b144db' }]} />
+                <View style={[styles.legendDot, { backgroundColor: theme.legendDotPrimary }]} />
                 <Text style={[styles.legendText, { color: theme.legendText }]}>Has tasks</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#d8a9f2' }]} />
+                <View style={[styles.legendDot, { backgroundColor: theme.legendDotSelected }]} />
                 <Text style={[styles.legendText, { color: theme.legendText }]}>Selected date</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#d8eef7' }]} />
+                <View style={[styles.legendDot, { backgroundColor: theme.legendDotToday }]} />
                 <Text style={[styles.legendText, { color: theme.legendText }]}>Today</Text>
               </View>
             </View>
@@ -625,8 +653,8 @@ export default function DashboardScreen() {
               <View style={styles.selectedTasksHeader}>
                 <Text style={[styles.selectedTasksTitle, { color: theme.selectedTasksTitle }]}>Selected Day</Text>
                 <Text style={[styles.selectedTasksDate, { color: theme.selectedTasksDate }]}>{formattedSelectedDate}</Text>
-                <View style={styles.selectedTasksCount}>
-                  <Text style={styles.selectedTasksCountText}>
+                <View style={[styles.selectedTasksCount, { backgroundColor: theme.selectedTasksCountBg }]}>
+                  <Text style={[styles.selectedTasksCountText, { color: theme.selectedTasksCountText }]}>
                     {selectedDateTasks.length} Tasks
                   </Text>
                 </View>
@@ -643,17 +671,23 @@ export default function DashboardScreen() {
                     <View
                       style={[
                         styles.statusBadge,
-                        task.status === 'pending'
-                          ? styles.pendingBadge
-                          : styles.completedBadge,
+                        {
+                          backgroundColor:
+                            task.status === 'pending'
+                              ? theme.pendingBadgeBg
+                              : theme.completedBadgeBg,
+                        },
                       ]}
                     >
                       <Text
                         style={[
                           styles.statusText,
-                          task.status === 'pending'
-                            ? styles.pendingBadgeText
-                            : styles.completedBadgeText,
+                          {
+                            color:
+                              task.status === 'pending'
+                                ? theme.pendingBadgeText
+                                : theme.completedBadgeText,
+                          },
                         ]}
                       >
                         {task.status === 'pending' ? 'Pending' : 'Completed'}
@@ -671,7 +705,7 @@ export default function DashboardScreen() {
               )}
 
               <TouchableOpacity
-                style={styles.goToDateBtn}
+                style={[styles.goToDateBtn, { backgroundColor: theme.goToDateBtnBg }]}
                 activeOpacity={0.85}
                 onPress={() => setMonthModalVisible(false)}
               >
@@ -688,7 +722,7 @@ export default function DashboardScreen() {
 
           <View style={styles.drawerWrap}>
             <View style={[styles.drawer, { backgroundColor: theme.drawerBg }]}>
-              <View style={styles.drawerTop}>
+              <View style={[styles.drawerTop, { backgroundColor: theme.drawerHeaderBg }]}>
                 <View style={styles.drawerHeader}>
                   <View style={{ width: 28, height: 28 }} />
                   <TouchableOpacity
@@ -735,10 +769,10 @@ export default function DashboardScreen() {
                       <Ionicons
                         name={item.icon as any}
                         size={19}
-                        color={item.active ? '#a14ccf' : '#a861cf'}
+                        color={item.active ? theme.menuIconActive : theme.menuIcon}
                       />
                     </View>
-                    <Text style={[styles.menuText, { color: theme.menuText }, item.active && styles.menuTextActive]}>
+                    <Text style={[styles.menuText, { color: theme.menuText }, item.active && { color: theme.menuIconActive, fontWeight: '800' }]}>
                       {item.title}
                     </Text>
                   </TouchableOpacity>
@@ -761,7 +795,7 @@ export default function DashboardScreen() {
               onPress={() => navigateWithClose('/(tabs)/home/add-task')}
             >
               <View style={[styles.quickActionIcon, { backgroundColor: theme.quickActionIconBg }]}>
-                <Ionicons name="add-circle-outline" size={18} color="#a14ccf" />
+                <Ionicons name="add-circle-outline" size={18} color={theme.primary} />
               </View>
               <Text style={[styles.quickActionText, { color: theme.quickActionText }]}>Add Task</Text>
             </TouchableOpacity>
@@ -772,7 +806,7 @@ export default function DashboardScreen() {
               onPress={() => navigateWithClose('/(tabs)/home/today-plan')}
             >
               <View style={[styles.quickActionIcon, { backgroundColor: theme.quickActionIconBg }]}>
-                <Ionicons name="calendar-outline" size={18} color="#a14ccf" />
+                <Ionicons name="calendar-outline" size={18} color={theme.primary} />
               </View>
               <Text style={[styles.quickActionText, { color: theme.quickActionText }]}>Today's Plan</Text>
             </TouchableOpacity>
@@ -783,7 +817,7 @@ export default function DashboardScreen() {
               onPress={() => navigateWithClose('/(tabs)/tasks')}
             >
               <View style={[styles.quickActionIcon, { backgroundColor: theme.quickActionIconBg }]}>
-                <Ionicons name="list-outline" size={18} color="#a14ccf" />
+                <Ionicons name="list-outline" size={18} color={theme.primary} />
               </View>
               <Text style={[styles.quickActionText, { color: theme.quickActionText }]}>Tasks</Text>
             </TouchableOpacity>
@@ -794,7 +828,7 @@ export default function DashboardScreen() {
               onPress={() => navigateWithClose('/(tabs)/home/AISchedulerScreen')}
             >
               <View style={[styles.quickActionIcon, { backgroundColor: theme.quickActionIconBg }]}>
-                <Ionicons name="sparkles-outline" size={18} color="#a14ccf" />
+                <Ionicons name="sparkles-outline" size={18} color={theme.primary} />
               </View>
               <Text style={[styles.quickActionText, { color: theme.quickActionText }]}>AI Scheduler</Text>
             </TouchableOpacity>
@@ -803,7 +837,7 @@ export default function DashboardScreen() {
       )}
 
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: theme.fabBg }]}
         activeOpacity={0.9}
         onPress={() => {
           setQuickActionsVisible((prev) => !prev);
@@ -818,7 +852,7 @@ export default function DashboardScreen() {
       </TouchableOpacity>
 
       <View style={[styles.fabLabelWrap, { backgroundColor: theme.fabLabelBg, borderColor: theme.fabLabelBorder }]}>
-        <Text style={styles.fabLabel}>AI Plan</Text>
+        <Text style={[styles.fabLabel, { color: theme.fabLabelText }]}>AI Plan</Text>
       </View>
     </View>
   );
@@ -840,7 +874,6 @@ function getDateWithOffset(days: number) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f7f4f8',
   },
   topBg: {
     position: 'absolute',
@@ -848,7 +881,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 180,
-    backgroundColor: '#efc9f6',
     borderBottomLeftRadius: 26,
     borderBottomRightRadius: 26,
   },
@@ -869,9 +901,7 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ececec',
   },
   headerCenter: {
     flex: 1,
@@ -880,22 +910,18 @@ const styles = StyleSheet.create({
   hello: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 2,
   },
   subText: {
     fontSize: 13,
-    color: '#555',
   },
   avatar: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#eedcf7',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#e4c9f0',
     overflow: 'hidden',
   },
   avatarImage: {
@@ -905,7 +931,6 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#7e329d',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -920,36 +945,19 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#ececec',
-  },
-  totalCard: {
-    backgroundColor: '#fff',
-  },
-  completedCard: {
-    backgroundColor: '#dff8de',
-  },
-  pendingCard: {
-    backgroundColor: '#dff3ff',
-  },
-  missedCard: {
-    backgroundColor: '#ffd7d7',
   },
   statNumber: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 13,
-    color: '#333',
     fontWeight: '700',
   },
   progressCard: {
-    backgroundColor: '#fff',
     borderRadius: 20,
     borderWidth: 1.2,
-    borderColor: '#ececec',
     padding: 14,
     marginBottom: 14,
   },
@@ -963,18 +971,15 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 3,
   },
   progressSubText: {
     fontSize: 13,
-    color: '#666',
   },
   progressPercentBadge: {
     minWidth: 58,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f3e1fb',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
@@ -982,24 +987,19 @@ const styles = StyleSheet.create({
   progressPercentText: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#9f3dd1',
   },
   progressBarTrack: {
     height: 12,
     borderRadius: 999,
-    backgroundColor: '#f1e5f7',
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
     borderRadius: 999,
-    backgroundColor: '#b144db',
   },
   calendarCard: {
-    backgroundColor: '#fff',
     borderRadius: 20,
     borderWidth: 1.2,
-    borderColor: '#ececec',
     paddingVertical: 14,
     paddingHorizontal: 14,
     marginBottom: 14,
@@ -1013,12 +1013,10 @@ const styles = StyleSheet.create({
   calendarTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#111',
   },
   calendarLink: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#c14de7',
   },
   calendarRow: {
     gap: 10,
@@ -1030,30 +1028,21 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#faf7fb',
     borderWidth: 1,
-    borderColor: '#f0e4f5',
-  },
-  dateChipActive: {
-    backgroundColor: '#111',
-    borderColor: '#111',
   },
   dayText: {
     fontSize: 11,
-    color: '#777',
     marginBottom: 2,
     fontWeight: '700',
   },
   dateText: {
     fontSize: 16,
-    color: '#111',
     fontWeight: '800',
   },
   dateChipTextActive: {
     color: '#fff',
   },
   mainCard: {
-    backgroundColor: '#e8c4ef',
     borderRadius: 22,
     padding: 14,
     marginBottom: 14,
@@ -1071,12 +1060,10 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 21,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 4,
   },
   cardDate: {
     fontSize: 13,
-    color: '#555',
   },
   actionPillsRow: {
     flexDirection: 'row',
@@ -1092,25 +1079,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f8eab4',
   },
   aiTaskPillText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#111',
   },
   addTaskPill: {
     paddingHorizontal: 12,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
   addTaskPillText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#111',
   },
   filterRow: {
     flexDirection: 'row',
@@ -1121,19 +1104,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 34,
     borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.58)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(17,17,17,0.08)',
-  },
-  filterChipActive: {
-    backgroundColor: '#111',
   },
   filterText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#111',
   },
   filterTextActive: {
     color: '#fff',
@@ -1143,10 +1120,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   taskCard: {
-    backgroundColor: '#fff',
     borderRadius: 18,
     borderWidth: 1.2,
-    borderColor: '#ececec',
     paddingVertical: 13,
     paddingHorizontal: 14,
     flexDirection: 'row',
@@ -1156,12 +1131,10 @@ const styles = StyleSheet.create({
   taskTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 3,
   },
   taskTime: {
     fontSize: 12.5,
-    color: '#666',
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -1170,32 +1143,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pendingBadge: {
-    backgroundColor: '#dff3ff',
-  },
-  completedBadge: {
-    backgroundColor: '#dff8de',
-  },
-  missedBadge: {
-    backgroundColor: '#fde8e8',
-  },
   statusText: {
     fontSize: 11.5,
     fontWeight: '800',
   },
-  pendingBadgeText: {
-    color: '#126a8a',
-  },
-  missedBadgeText: {
-    color: '#c0392b',
-  },
-  completedBadgeText: {
-    color: '#1f7a31',
-  },
   tipCard: {
-    backgroundColor: '#fff',
     borderWidth: 1.2,
-    borderColor: '#ececec',
     borderRadius: 18,
     padding: 16,
     marginBottom: 12,
@@ -1209,29 +1162,23 @@ const styles = StyleSheet.create({
   tipTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#111',
   },
   tipText: {
     fontSize: 13.5,
     lineHeight: 20,
-    color: '#555',
   },
   emptyCard: {
-    backgroundColor: '#fff',
     borderRadius: 18,
     padding: 16,
     borderWidth: 1.2,
-    borderColor: '#ececec',
   },
   emptyTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 4,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
     lineHeight: 19,
   },
   modalOverlay: {
@@ -1243,7 +1190,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   modalSheet: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 18,
@@ -1255,7 +1201,6 @@ const styles = StyleSheet.create({
     width: 58,
     height: 5,
     borderRadius: 999,
-    backgroundColor: '#d5ccd9',
     alignSelf: 'center',
     marginBottom: 14,
   },
@@ -1269,7 +1214,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#111',
   },
   weekHeader: {
     flexDirection: 'row',
@@ -1281,7 +1225,6 @@ const styles = StyleSheet.create({
     width: '14.28%',
     textAlign: 'center',
     fontSize: 12,
-    color: '#777',
     fontWeight: '600',
   },
   monthGrid: {
@@ -1301,32 +1244,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  selectedDayWrap: {
-    backgroundColor: '#b144db',
-  },
-  todayDayWrap: {
-    backgroundColor: '#dff3ff',
-  },
   dayNumber: {
     fontSize: 16,
-    color: '#111',
     fontWeight: '700',
-  },
-  otherMonthText: {
-    color: '#bbb',
   },
   selectedDayText: {
     color: '#fff',
-  },
-  todayDayText: {
-    color: '#111',
   },
   dot: {
     marginTop: 5,
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#b144db',
   },
   legendRow: {
     flexDirection: 'row',
@@ -1345,14 +1274,11 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: '#666',
   },
   selectedTasksCard: {
-    backgroundColor: '#faf7fb',
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#f0e4f5',
   },
   selectedTasksHeader: {
     marginBottom: 10,
@@ -1360,12 +1286,10 @@ const styles = StyleSheet.create({
   selectedTasksTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 2,
   },
   selectedTasksDate: {
     fontSize: 13,
-    color: '#666',
     marginBottom: 8,
   },
   selectedTasksCount: {
@@ -1373,12 +1297,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: '#f3e1fb',
   },
   selectedTasksCountText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#9f3dd1',
   },
   modalTaskRow: {
     flexDirection: 'row',
@@ -1386,17 +1308,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   modalTaskTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 3,
   },
   modalTaskTime: {
     fontSize: 12,
-    color: '#666',
   },
   emptyModalTasks: {
     paddingVertical: 10,
@@ -1407,7 +1326,6 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#b144db',
   },
   goToDateBtnText: {
     color: '#fff',
@@ -1432,7 +1350,6 @@ const styles = StyleSheet.create({
   },
   drawer: {
     flex: 1,
-    backgroundColor: '#fff',
     borderTopRightRadius: 26,
     borderBottomRightRadius: 70,
     overflow: 'hidden',
@@ -1443,7 +1360,6 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   drawerTop: {
-    backgroundColor: '#c78ae9',
     paddingBottom: 14,
   },
   drawerHeader: {
@@ -1515,14 +1431,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
   },
-  menuItemActive: {
-    backgroundColor: '#f3e9fb',
-  },
   menuIconWrap: {
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: '#f8f1fc',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -1530,11 +1442,6 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 15.5,
     fontWeight: '700',
-    color: '#111',
-  },
-  menuTextActive: {
-    color: '#a14ccf',
-    fontWeight: '800',
   },
   quickActionOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -1546,7 +1453,6 @@ const styles = StyleSheet.create({
     right: 24,
     bottom: 110,
     width: 190,
-    backgroundColor: '#fff',
     borderRadius: 22,
     paddingVertical: 10,
     paddingHorizontal: 10,
@@ -1556,7 +1462,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 14,
     borderWidth: 1,
-    borderColor: '#f0e6f5',
   },
   quickActionItem: {
     flexDirection: 'row',
@@ -1569,7 +1474,6 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#f8f1fc',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -1577,7 +1481,6 @@ const styles = StyleSheet.create({
   quickActionText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#111',
   },
   fab: {
     position: 'absolute',
@@ -1586,7 +1489,6 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: '#b144db',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -1600,17 +1502,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 18,
     bottom: 82,
-    backgroundColor: '#ffffff',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#eadcf1',
     zIndex: 19,
   },
   fabLabel: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#9f3dd1',
   },
 });

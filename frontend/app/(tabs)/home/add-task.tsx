@@ -196,7 +196,7 @@ export default function AddTaskScreen() {
     selected,
     onPress,
     icon,
-    activeColor = '#df5ca8',
+    activeColor = theme.primary,
   }: {
     label: string;
     selected: boolean;
@@ -207,7 +207,7 @@ export default function AddTaskScreen() {
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={onPress}
-      style={[styles.chip, { backgroundColor: selected ? theme.addTaskContainerBg : theme.addTaskChipBg, borderColor: selected ? '#df5ca8' : theme.addTaskChipBorder }, selected && styles.chipSelected]}
+      style={[styles.chip, { backgroundColor: selected ? theme.addTaskChipSelectedBg : theme.addTaskChipBg, borderColor: selected ? theme.addTaskChipSelectedBorder : theme.addTaskChipBorder }, selected && styles.chipSelected]}
     >
       <View style={styles.chipInner}>
         {icon ? <View style={styles.chipIcon}>{icon}</View> : null}
@@ -233,7 +233,7 @@ export default function AddTaskScreen() {
         <View style={[styles.card, { backgroundColor: theme.addTaskCardBg, borderColor: theme.addTaskCardBorder }]}>
           <View style={styles.cardHeader}>
             <View style={[styles.leftIconBox, { backgroundColor: theme.addTaskIconBoxBg }]}>
-              <Ionicons name="create-outline" size={20} color="#df5ca8" />
+              <Ionicons name="create-outline" size={20} color={theme.primary} />
             </View>
             <Text style={[styles.cardTitle, { color: theme.addTaskCardTitle }]}>Task Title</Text>
           </View>
@@ -249,7 +249,7 @@ export default function AddTaskScreen() {
         <View style={[styles.card, { backgroundColor: theme.addTaskCardBg, borderColor: theme.addTaskCardBorder }]}>
           <View style={styles.cardHeader}>
             <View style={[styles.leftIconBox, { backgroundColor: theme.addTaskIconBoxBg }]}>
-              <Ionicons name="calendar-outline" size={20} color="#df5ca8" />
+              <Ionicons name="calendar-outline" size={20} color={theme.primary} />
             </View>
             <Text style={[styles.cardTitle, { color: theme.addTaskCardTitle }]}>Task Deadline</Text>
           </View>
@@ -334,7 +334,7 @@ export default function AddTaskScreen() {
                     <Ionicons
                       name="calendar-outline"
                       size={20}
-                      color="#df5ca8"
+                      color={theme.primary}
                     />
                   </TouchableOpacity>
                 </View>
@@ -353,7 +353,7 @@ export default function AddTaskScreen() {
                     <Ionicons
                       name="time-outline"
                       size={20}
-                      color="#df5ca8"
+                      color={theme.primary}
                     />
                   </TouchableOpacity>
                 </View>
@@ -388,7 +388,7 @@ export default function AddTaskScreen() {
                 <Ionicons
                   name="sunny-outline"
                   size={18}
-                  color={meridiem === 'AM' ? '#df5ca8' : '#666'}
+                  color={meridiem === 'AM' ? theme.primary : theme.subText}
                 />
               }
             />
@@ -401,7 +401,7 @@ export default function AddTaskScreen() {
                 <Ionicons
                   name="moon-outline"
                   size={18}
-                  color={meridiem === 'PM' ? '#df5ca8' : '#666'}
+                  color={meridiem === 'PM' ? theme.primary : theme.subText}
                 />
               }
             />
@@ -412,7 +412,7 @@ export default function AddTaskScreen() {
         <View style={[styles.card, { backgroundColor: theme.addTaskCardBg, borderColor: theme.addTaskCardBorder }]}>
           <View style={styles.cardHeader}>
             <View style={[styles.leftIconBox, { backgroundColor: theme.addTaskIconBoxBg }]}>
-              <Ionicons name="reload-outline" size={20} color="#df5ca8" />
+              <Ionicons name="reload-outline" size={20} color={theme.primary} />
             </View>
             <Text style={[styles.cardTitle, { color: theme.addTaskCardTitle }]}>Repeat</Text>
           </View>
@@ -421,25 +421,25 @@ export default function AddTaskScreen() {
               label="Once"
               selected={repeat === 'Once'}
               onPress={() => setRepeat('Once')}
-              icon={<Ionicons name="radio-button-on" size={18} color={repeat === 'Once' ? '#df5ca8' : '#666'} />}
+              icon={<Ionicons name="radio-button-on" size={18} color={repeat === 'Once' ? theme.primary : theme.subText} />}
             />
             <Chip
               label="Daily"
               selected={repeat === 'Daily'}
               onPress={() => setRepeat('Daily')}
-              icon={<Ionicons name="calendar-outline" size={18} color={repeat === 'Daily' ? '#df5ca8' : '#666'} />}
+              icon={<Ionicons name="calendar-outline" size={18} color={repeat === 'Daily' ? theme.primary : theme.subText} />}
             />
             <Chip
               label="Weekly"
               selected={repeat === 'Weekly'}
               onPress={() => setRepeat('Weekly')}
-              icon={<Ionicons name="calendar-outline" size={18} color={repeat === 'Weekly' ? '#df5ca8' : '#666'} />}
+              icon={<Ionicons name="calendar-outline" size={18} color={repeat === 'Weekly' ? theme.primary : theme.subText} />}
             />
             <Chip
               label="Custom"
               selected={repeat === 'Custom'}
               onPress={() => setRepeat('Custom')}
-              icon={<Ionicons name="options-outline" size={18} color={repeat === 'Custom' ? '#df5ca8' : '#666'} />}
+              icon={<Ionicons name="options-outline" size={18} color={repeat === 'Custom' ? theme.primary : theme.subText} />}
             />
           </View>
         </View>
@@ -447,7 +447,7 @@ export default function AddTaskScreen() {
         <View style={[styles.card, { backgroundColor: theme.addTaskCardBg, borderColor: theme.addTaskCardBorder }]}>
           <View style={styles.cardHeader}>
             <View style={[styles.leftIconBox, { backgroundColor: theme.addTaskIconBoxBg }]}>
-              <Ionicons name="flag-outline" size={20} color="#df5ca8" />
+              <Ionicons name="flag-outline" size={20} color={theme.primary} />
             </View>
             <Text style={[styles.cardTitle, { color: theme.addTaskCardTitle }]}>Priority Level</Text>
           </View>
@@ -479,7 +479,7 @@ export default function AddTaskScreen() {
         <View style={[styles.card, { backgroundColor: theme.addTaskCardBg, borderColor: theme.addTaskCardBorder }]}>
           <View style={styles.cardHeader}>
             <View style={[styles.leftIconBox, { backgroundColor: theme.addTaskIconBoxBg }]}>
-              <Ionicons name="bookmark-outline" size={20} color="#df5ca8" />
+              <Ionicons name="bookmark-outline" size={20} color={theme.primary} />
             </View>
             <Text style={[styles.cardTitle, { color: theme.addTaskCardTitle }]}>Status</Text>
           </View>
@@ -488,8 +488,8 @@ export default function AddTaskScreen() {
               label="To Do"
               selected={status === 'To Do'}
               onPress={() => setStatus('To Do')}
-              activeColor="#df5ca8"
-              icon={<Ionicons name="pin-outline" size={18} color={status === 'To Do' ? '#df5ca8' : '#666'} />}
+              activeColor={theme.primary}
+              icon={<Ionicons name="pin-outline" size={18} color={status === 'To Do' ? theme.primary : theme.subText} />}
             />
             <Chip
               label="In Progress"
@@ -511,7 +511,7 @@ export default function AddTaskScreen() {
         <View style={[styles.card, { backgroundColor: theme.addTaskCardBg, borderColor: theme.addTaskCardBorder }]}>
           <View style={styles.cardHeader}>
             <View style={[styles.leftIconBox, { backgroundColor: theme.addTaskIconBoxBg }]}>
-              <Ionicons name="document-text-outline" size={20} color="#df5ca8" />
+              <Ionicons name="document-text-outline" size={20} color={theme.primary} />
             </View>
             <Text style={[styles.cardTitle, { color: theme.addTaskCardTitle }]}>Note (Optional)</Text>
           </View>
@@ -530,7 +530,7 @@ export default function AddTaskScreen() {
         <View style={[styles.card, { backgroundColor: theme.addTaskCardBg, borderColor: theme.addTaskCardBorder }]}>
           <View style={styles.cardHeader}>
             <View style={[styles.leftIconBox, { backgroundColor: theme.addTaskIconBoxBg }]}>
-              <Ionicons name="notifications-outline" size={20} color="#df5ca8" />
+              <Ionicons name="notifications-outline" size={20} color={theme.primary} />
             </View>
             <Text style={[styles.cardTitle, { color: theme.addTaskCardTitle }]}>Reminder</Text>
           </View>
@@ -539,13 +539,13 @@ export default function AddTaskScreen() {
             <Switch
               value={reminder}
               onValueChange={setReminder}
-              trackColor={{ false: '#ddd', true: '#f4a8cc' }}
+              trackColor={{ false: theme.switchTrackOff, true: theme.switchTrackOn }}
               thumbColor="#fff"
             />
           </View>
         </View>
 
-        <TouchableOpacity style={styles.addBtn} activeOpacity={0.9} onPress={handleSave}>
+        <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.addTaskBtnBg }]} activeOpacity={0.9} onPress={handleSave}>
           <Ionicons name="add" size={24} color="#fff" />
           <Text style={styles.addBtnText}>Add Task</Text>
         </TouchableOpacity>
@@ -557,7 +557,6 @@ export default function AddTaskScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF7FB',
     position: 'relative',
   },
   topShape: {
@@ -566,7 +565,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: 190,
     height: 150,
-    backgroundColor: '#F8DCEB',
     borderBottomLeftRadius: 95,
     borderBottomRightRadius: 95,
     zIndex: 0,
@@ -618,7 +616,6 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: '#fff3f8',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -684,8 +681,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   chipSelected: {
-    borderColor: '#df5ca8',
-    backgroundColor: '#FFF6FB',
+    borderWidth: 1.5,
   },
   chipInner: {
     flexDirection: 'row',
@@ -734,7 +730,6 @@ const styles = StyleSheet.create({
   addBtn: {
     height: 58,
     borderRadius: 18,
-    backgroundColor: '#e814ac',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

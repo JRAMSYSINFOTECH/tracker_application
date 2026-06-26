@@ -192,7 +192,7 @@ export default function MyTasksScreen() {
     onPress: () => void;
   }) => (
     <TouchableOpacity
-      style={[styles.filterChip, { backgroundColor: theme.filterBg ?? theme.tasksItemBg, borderColor: theme.filterBorder ?? theme.tasksItemBorder }, active && styles.activeFilterChip]}
+      style={[styles.filterChip, { backgroundColor: theme.filterBg ?? theme.tasksItemBg, borderColor: theme.filterBorder ?? theme.tasksItemBorder }, active && { backgroundColor: theme.tasksActiveFilterBg }]}
       onPress={onPress}
       activeOpacity={0.8}
     >
@@ -252,41 +252,41 @@ export default function MyTasksScreen() {
         onScrollBeginDrag={() => setOpenMenuTaskId(null)}
       >
         <View style={styles.topRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={22} color="#fff" />
+          <TouchableOpacity style={[styles.backBtn, { backgroundColor: theme.tasksIconBtnBg }]} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={22} color={theme.primary} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.addIconBtn}
+            style={[styles.addIconBtn, { backgroundColor: theme.tasksIconBtnBg }]}
             onPress={() => router.push('/(tabs)/home/add-task' as any)}
           >
-            <Ionicons name="add" size={22} color="#E91E63" />
+            <Ionicons name="add" size={22} color={theme.primary} />
           </TouchableOpacity>
         </View>
 
-        <Text style={[styles.title, { color: '#fff' }]}>My Tasks</Text>
-        <Text style={[styles.subtitle, { color: 'rgba(255,255,255,0.7)' }]}>Track, edit and manage your daily tasks.</Text>
+        <Text style={[styles.title, { color: theme.text }]}>My Tasks</Text>
+        <Text style={[styles.subtitle, { color: theme.subText }]}>Track, edit and manage your daily tasks.</Text>
 
         <View style={styles.summaryRow}>
-          <View style={[styles.summaryCard, styles.totalCard]}>
-            <View style={[styles.summaryIconBox, styles.totalIconBox]}>
-              <Ionicons name="clipboard-outline" size={24} color="#E91E63" />
+          <View style={[styles.summaryCard, { backgroundColor: theme.tasksSummaryTotalBg }]}>
+            <View style={[styles.summaryIconBox, { backgroundColor: theme.tasksSummaryTotalIconBg }]}>
+              <Ionicons name="clipboard-outline" size={24} color={theme.primary} />
             </View>
             <View>
-              <Text style={styles.summaryNumber}>{formattedTasks.length}</Text>
-              <Text style={styles.summaryLabel}>Total Tasks</Text>
+              <Text style={[styles.summaryNumber, { color: theme.text }]}>{formattedTasks.length}</Text>
+              <Text style={[styles.summaryLabel, { color: theme.subText }]}>Total Tasks</Text>
             </View>
           </View>
 
-          <View style={[styles.summaryCard, styles.completedCard]}>
-            <View style={[styles.summaryIconBox, styles.completedIconBox]}>
+          <View style={[styles.summaryCard, { backgroundColor: theme.tasksSummaryCompletedBg }]}>
+            <View style={[styles.summaryIconBox, { backgroundColor: theme.tasksSummaryCompletedIconBg }]}>
               <Ionicons name="checkmark-circle-outline" size={24} color="#1F8A2F" />
             </View>
             <View>
-              <Text style={styles.summaryNumber}>
+              <Text style={[styles.summaryNumber, { color: theme.text }]}>
                 {formattedTasks.filter((item) => item.status === 'Completed').length}
               </Text>
-              <Text style={styles.summaryLabel}>Completed</Text>
+              <Text style={[styles.summaryLabel, { color: theme.subText }]}>Completed</Text>
             </View>
           </View>
         </View>
@@ -304,10 +304,10 @@ export default function MyTasksScreen() {
           </View>
 
           <TouchableOpacity
-            style={styles.filterIconBtn}
+            style={[styles.filterIconBtn, { backgroundColor: theme.tasksIconBtnBg }]}
             onPress={() => setShowFilters(!showFilters)}
           >
-            <Ionicons name="options-outline" size={22} color="#E91E63" />
+            <Ionicons name="options-outline" size={22} color={theme.primary} />
           </TouchableOpacity>
         </View>
 
@@ -335,8 +335,8 @@ export default function MyTasksScreen() {
             <View style={styles.taskCardTop}>
               <View style={styles.taskLeftColumn}>
                 <View style={styles.timeWrap}>
-                  <Text style={[styles.timeText, { color: theme.tasksItemTime }]}>{item.time.split(' ')[0]}</Text>
-                  <Text style={[styles.timeText, { color: theme.tasksItemTime }]}>{item.time.split(' ')[1]}</Text>
+                  <Text style={[styles.timeText, { color: theme.tasksTimeText }]}>{item.time.split(' ')[0]}</Text>
+                  <Text style={[styles.timeText, { color: theme.tasksTimeText }]}>{item.time.split(' ')[1]}</Text>
                 </View>
               </View>
 
@@ -365,7 +365,7 @@ export default function MyTasksScreen() {
                           ? styles.mediumDot
                           : item.status === 'Completed'
                             ? styles.lowDot
-                            : styles.highDot,
+                            : [styles.highDot, { backgroundColor: theme.primary }],
                       ]}
                     />
                   </View>
@@ -429,7 +429,7 @@ export default function MyTasksScreen() {
               {(['ToDo', 'InProgress', 'Completed'] as FilterType[]).map((item) => (
                 <TouchableOpacity
                   key={item}
-                  style={[styles.filterChip, { backgroundColor: theme.filterBg ?? theme.tasksItemBg, borderColor: theme.filterBorder ?? theme.tasksItemBorder }, editStatus === item && styles.activeFilterChip]}
+                  style={[styles.filterChip, { backgroundColor: theme.filterBg ?? theme.tasksItemBg, borderColor: theme.filterBorder ?? theme.tasksItemBorder }, editStatus === item && { backgroundColor: theme.tasksActiveFilterBg }]}
                   onPress={() => setEditStatus(item)}
                 >
                   <Text
@@ -449,8 +449,8 @@ export default function MyTasksScreen() {
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.modalSaveBtn} onPress={handleSaveEdit}>
-                <Text style={styles.modalSaveText}>Save</Text>
+              <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: theme.tasksModalSaveBg }]} onPress={handleSaveEdit}>
+                <Text style={[styles.modalSaveText, { color: theme.text }]}>Save</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -463,7 +463,6 @@ export default function MyTasksScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   topShape: {
     position: 'absolute',
@@ -471,7 +470,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: 210,
     height: 160,
-    backgroundColor: '#F4CCFF',
     borderBottomLeftRadius: 105,
     borderBottomRightRadius: 105,
     zIndex: 0,
@@ -491,7 +489,6 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#FBEAF7',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -499,7 +496,6 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#FBEAF7',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -531,24 +527,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  totalCard: {
-    backgroundColor: '#FDF0F7',
-  },
-  completedCard: {
-    backgroundColor: '#F2FAF0',
-  },
   summaryIconBox: {
     width: 48,
     height: 48,
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  totalIconBox: {
-    backgroundColor: '#FBE1EF',
-  },
-  completedIconBox: {
-    backgroundColor: '#E4F7E6',
   },
   summaryNumber: {
     fontSize: 26,
@@ -588,7 +572,6 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 18,
-    backgroundColor: '#FBEAF7',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -604,9 +587,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  activeFilterChip: {
-    backgroundColor: '#E91E63',
-  },
+  activeFilterChip: {},
   filterText: {
     fontSize: 14,
     color: '#222',
@@ -649,7 +630,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 24,
     fontWeight: '800',
-    color: '#E91E63',
   },
   taskMainColumn: {
     flex: 1,
@@ -710,9 +690,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#BDBDBD',
   },
-  highDot: {
-    backgroundColor: '#E91E63',
-  },
+  highDot: {},
   mediumDot: {
     backgroundColor: '#F59E0B',
   },
@@ -845,7 +823,6 @@ const styles = StyleSheet.create({
     width: '48%',
     height: 46,
     borderRadius: 23,
-    backgroundColor: '#F4CCFF',
     justifyContent: 'center',
     alignItems: 'center',
   },
