@@ -1,13 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { useTheme } from '../../constants/src/context/ThemeContext';
 
 export default function TabsLayout() {
+  const { theme } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#a14ccf',
-        tabBarInactiveTintColor: '#8f8f8f',
+        tabBarActiveTintColor: theme.activeText,
+        tabBarInactiveTintColor: theme.subText,
+        tabBarActiveBackgroundColor: theme.activeBg,
         tabBarStyle: {
           position: 'absolute',
           left: 0,
@@ -16,14 +20,14 @@ export default function TabsLayout() {
           height: 68,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
-          backgroundColor: '#fff',
+          backgroundColor: theme.cardBg,
           borderTopWidth: 1,
-          borderColor: '#ead8f3',
+          borderColor: theme.border,
           paddingTop: 8,
           paddingBottom: 8,
           elevation: 20,
           zIndex: 20,
-          shadowColor: '#000',
+          shadowColor: theme.isDark ? '#000' : '#999',
           shadowOpacity: 0.08,
           shadowRadius: 10,
           shadowOffset: { width: 0, height: -2 },
@@ -34,6 +38,8 @@ export default function TabsLayout() {
         },
         tabBarItemStyle: {
           paddingVertical: 2,
+          borderRadius: 14,
+          marginHorizontal: 8,
         },
       }}
     >

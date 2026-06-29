@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { useTaskContext } from '../../constants/src/context/TaskContext';
+import { useTheme } from '../../constants/src/context/ThemeContext';
 
 type FilterType = 'All' | 'ToDo' | 'InProgress' | 'Completed';
 
@@ -25,6 +26,7 @@ type TaskType = {
 
 export default function MyTasksScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
   const {
     tasks: contextTasks,
     updateTask,
@@ -184,11 +186,14 @@ export default function MyTasksScreen() {
     onPress: () => void;
   }) => (
     <TouchableOpacity
-      style={[styles.filterChip, active && styles.activeFilterChip]}
+      style={[
+        styles.filterChip,
+        { backgroundColor: active ? theme.primary : theme.inputBg, borderColor: active ? theme.primary : theme.border },
+      ]}
       onPress={onPress}
       activeOpacity={0.8}
     >
-      <Text style={[styles.filterText, active && styles.activeFilterText]}>{label}</Text>
+      <Text style={[styles.filterText, { color: active ? '#fff' : theme.text }]}>{label}</Text>
     </TouchableOpacity>
   );
 
@@ -202,11 +207,11 @@ export default function MyTasksScreen() {
           onPress={() => setOpenMenuTaskId(open ? null : taskId)}
           activeOpacity={0.8}
         >
-          <Ionicons name="ellipsis-horizontal" size={18} color="#111" />
+          <Ionicons name="ellipsis-horizontal" size={18} color={theme.text} />
         </TouchableOpacity>
 
         {open && (
-          <View style={styles.menuPopup}>
+          <View style={[styles.menuPopup, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => {
@@ -214,8 +219,8 @@ export default function MyTasksScreen() {
                 if (task) openEditModal(task);
               }}
             >
-              <Ionicons name="create-outline" size={16} color="#111" />
-              <Text style={styles.menuItemText}>Edit</Text>
+              <Ionicons name="create-outline" size={16} color={theme.text} />
+              <Text style={[styles.menuItemText, { color: theme.text }]}>Edit</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -235,8 +240,8 @@ export default function MyTasksScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topShape} />
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      <View style={[styles.topShape, { backgroundColor: theme.topSurface }]} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -244,62 +249,62 @@ export default function MyTasksScreen() {
         onScrollBeginDrag={() => setOpenMenuTaskId(null)}
       >
         <View style={styles.topRow}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={22} color="#111" />
+          <TouchableOpacity style={[styles.backBtn, { backgroundColor: theme.inputBg }]} onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={22} color={theme.text} />
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.addIconBtn}
+            style={[styles.addIconBtn, { backgroundColor: theme.softPrimary }]}
             onPress={() => router.push('/(tabs)/home/add-task' as any)}
           >
-            <Ionicons name="add" size={22} color="#E91E63" />
+            <Ionicons name="add" size={22} color={theme.primary} />
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.title}>My Tasks</Text>
-        <Text style={styles.subtitle}>Track, edit and manage your daily tasks.</Text>
+        <Text style={[styles.title, { color: theme.text }]}>My Tasks</Text>
+        <Text style={[styles.subtitle, { color: theme.subText }]}>Track, edit and manage your daily tasks.</Text>
 
         <View style={styles.summaryRow}>
-          <View style={[styles.summaryCard, styles.totalCard]}>
-            <View style={[styles.summaryIconBox, styles.totalIconBox]}>
-              <Ionicons name="clipboard-outline" size={24} color="#E91E63" />
+          <View style={[styles.summaryCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <View style={[styles.summaryIconBox, { backgroundColor: theme.softPrimary }]}>
+              <Ionicons name="clipboard-outline" size={24} color={theme.primary} />
             </View>
             <View>
-              <Text style={styles.summaryNumber}>{formattedTasks.length}</Text>
-              <Text style={styles.summaryLabel}>Total Tasks</Text>
+              <Text style={[styles.summaryNumber, { color: theme.text }]}>{formattedTasks.length}</Text>
+              <Text style={[styles.summaryLabel, { color: theme.subText }]}>Total Tasks</Text>
             </View>
           </View>
 
-          <View style={[styles.summaryCard, styles.completedCard]}>
-            <View style={[styles.summaryIconBox, styles.completedIconBox]}>
-              <Ionicons name="checkmark-circle-outline" size={24} color="#1F8A2F" />
+          <View style={[styles.summaryCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <View style={[styles.summaryIconBox, { backgroundColor: theme.isDark ? 'rgba(34,197,94,0.16)' : '#ECFDF5' }]}>
+              <Ionicons name="checkmark-circle-outline" size={24} color={theme.success} />
             </View>
             <View>
-              <Text style={styles.summaryNumber}>
+              <Text style={[styles.summaryNumber, { color: theme.text }]}>
                 {formattedTasks.filter((item) => item.status === 'Completed').length}
               </Text>
-              <Text style={styles.summaryLabel}>Completed</Text>
+              <Text style={[styles.summaryLabel, { color: theme.subText }]}>Completed</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.searchRow}>
-          <View style={styles.searchBox}>
-            <Ionicons name="search" size={20} color="#9A9A9A" />
+          <View style={[styles.searchBox, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <Ionicons name="search" size={20} color={theme.subText} />
             <TextInput
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: theme.text }]}
               placeholder="Search tasks"
-              placeholderTextColor="#9A9A9A"
+              placeholderTextColor={theme.subText}
               value={searchText}
               onChangeText={setSearchText}
             />
           </View>
 
           <TouchableOpacity
-            style={styles.filterIconBtn}
+            style={[styles.filterIconBtn, { backgroundColor: theme.softPrimary }]}
             onPress={() => setShowFilters(!showFilters)}
           >
-            <Ionicons name="options-outline" size={22} color="#E91E63" />
+            <Ionicons name="options-outline" size={22} color={theme.primary} />
           </TouchableOpacity>
         </View>
 
@@ -320,21 +325,34 @@ export default function MyTasksScreen() {
           </ScrollView>
         )}
 
-        <Text style={styles.sectionTitle}>Task List</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Task List</Text>
 
         {filteredTasks.map((item) => (
-          <View key={item.id} style={styles.taskCard}>
+          <View key={item.id} style={[styles.taskCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <View style={styles.taskCardTop}>
               <View style={styles.taskLeftColumn}>
                 <View style={styles.timeWrap}>
-                  <Text style={styles.timeText}>{item.time.split(' ')[0]}</Text>
-                  <Text style={styles.timeText}>{item.time.split(' ')[1]}</Text>
+                  <Text style={[styles.timeText, { color: theme.primary }]}>{item.time.split(' ')[0]}</Text>
+                  <Text style={[styles.timeText, { color: theme.primary }]}>{item.time.split(' ')[1]}</Text>
                 </View>
               </View>
 
               <View style={styles.taskMainColumn}>
                 <View style={styles.statusRow}>
-                  <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      getStatusStyle(item.status),
+                      theme.isDark && {
+                        backgroundColor:
+                          item.status === 'Completed'
+                            ? 'rgba(34,197,94,0.16)'
+                            : item.status === 'InProgress'
+                              ? 'rgba(251,191,36,0.16)'
+                              : 'rgba(99,102,241,0.16)',
+                      },
+                    ]}
+                  >
                     <Text style={[styles.statusBadgeText, getStatusTextStyle(item.status)]}>
                       {item.status === 'ToDo'
                         ? 'To Do'
@@ -345,7 +363,7 @@ export default function MyTasksScreen() {
                   </View>
 
                   <View style={styles.priorityWrap}>
-                    <Text style={styles.priorityText}>
+                    <Text style={[styles.priorityText, { color: theme.text }]}>
                       {item.status === 'InProgress' ? 'Medium' : item.status === 'Completed' ? 'Low' : 'High'}
                     </Text>
                     <View
@@ -363,17 +381,17 @@ export default function MyTasksScreen() {
                   <TaskMenu taskId={item.id} />
                 </View>
 
-                <Text style={styles.taskTitle}>{item.title}</Text>
-                <Text style={styles.taskNote}>{item.note}</Text>
+                <Text style={[styles.taskTitle, { color: theme.text }]}>{item.title}</Text>
+                <Text style={[styles.taskNote, { color: theme.subText }]}>{item.note}</Text>
               </View>
             </View>
           </View>
         ))}
 
         {filteredTasks.length === 0 && (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyTitle}>No tasks found</Text>
-            <Text style={styles.emptyText}>
+          <View style={[styles.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>No tasks found</Text>
+            <Text style={[styles.emptyText, { color: theme.subText }]}>
               Try another filter or search with a different keyword.
             </Text>
           </View>
@@ -382,31 +400,31 @@ export default function MyTasksScreen() {
 
       <Modal visible={editModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Edit Task</Text>
+          <View style={[styles.modalCard, { backgroundColor: theme.cardBg }]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>Edit Task</Text>
 
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.border }]}
               value={editTitle}
               onChangeText={setEditTitle}
               placeholder="Task title"
-              placeholderTextColor="#777"
+              placeholderTextColor={theme.subText}
             />
 
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.border }]}
               value={editTime}
               onChangeText={setEditTime}
               placeholder="Time"
-              placeholderTextColor="#777"
+              placeholderTextColor={theme.subText}
             />
 
             <TextInput
-              style={[styles.modalInput, styles.modalNoteInput]}
+              style={[styles.modalInput, styles.modalNoteInput, { backgroundColor: theme.inputBg, color: theme.text, borderColor: theme.border }]}
               value={editNote}
               onChangeText={setEditNote}
               placeholder="Task note"
-              placeholderTextColor="#777"
+              placeholderTextColor={theme.subText}
               multiline
               textAlignVertical="top"
             />
@@ -419,11 +437,14 @@ export default function MyTasksScreen() {
               {(['ToDo', 'InProgress', 'Completed'] as FilterType[]).map((item) => (
                 <TouchableOpacity
                   key={item}
-                  style={[styles.filterChip, editStatus === item && styles.activeFilterChip]}
+                style={[
+                  styles.filterChip,
+                  { backgroundColor: editStatus === item ? theme.primary : theme.inputBg, borderColor: editStatus === item ? theme.primary : theme.border },
+                ]}
                   onPress={() => setEditStatus(item)}
                 >
                   <Text
-                    style={[styles.filterText, editStatus === item && styles.activeFilterText]}
+                    style={[styles.filterText, { color: editStatus === item ? '#fff' : theme.text }]}
                   >
                     {item}
                   </Text>
@@ -433,13 +454,13 @@ export default function MyTasksScreen() {
 
             <View style={styles.modalBtnRow}>
               <TouchableOpacity
-                style={styles.modalCancelBtn}
+                style={[styles.modalCancelBtn, { borderColor: theme.border }]}
                 onPress={() => setEditModalVisible(false)}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={[styles.modalCancelText, { color: theme.text }]}>Cancel</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.modalSaveBtn} onPress={handleSaveEdit}>
+              <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: theme.primary }]} onPress={handleSaveEdit}>
                 <Text style={styles.modalSaveText}>Save</Text>
               </TouchableOpacity>
             </View>

@@ -70,7 +70,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.sectionTitle }]}>Account</Text>
           <View style={[styles.profileCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
-            <View style={styles.profileAvatar}>
+            <View style={[styles.profileAvatar, { backgroundColor: theme.primary }]}>
               {user?.profile_pic ? (
                 <Image source={{ uri: user.profile_pic }} style={styles.avatarImage} />
               ) : (
@@ -86,7 +86,7 @@ export default function SettingsScreen() {
               onPress={() => router.push('/(tabs)/home/edit-profile')}
               activeOpacity={0.7}
             >
-              <Ionicons name="create-outline" size={22} color="#a14ccf" />
+              <Ionicons name="create-outline" size={22} color={theme.primary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -127,7 +127,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* LOGOUT BUTTON */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <TouchableOpacity style={[styles.logoutButton, { backgroundColor: theme.error }]} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={22} color="#fff" />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>

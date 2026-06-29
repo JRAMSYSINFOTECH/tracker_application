@@ -17,8 +17,6 @@ import {
   View,
 } from 'react-native';
 
-// PROFILE_IMAGE constant removed, using user?.profile_pic dynamically
-
 type TaskStatus = 'pending' | 'completed';
 
 type DashboardTask = {
@@ -28,7 +26,6 @@ type DashboardTask = {
   status: TaskStatus;
   dateKey: string;
 };
-
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -56,7 +53,6 @@ export default function DashboardScreen() {
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   const formattedTasks: DashboardTask[] = contextTasks.map(
     (task) => {
-
       const taskDate = new Date(task.time);
 
       // Map backend statuses to dashboard display statuses
@@ -65,16 +61,12 @@ export default function DashboardScreen() {
 
       return {
         id: task.id,
-
         title: task.title,
-
         time: taskDate.toLocaleTimeString([], {
           hour: '2-digit',
           minute: '2-digit',
         }),
-
         status: mappedStatus,
-
         dateKey: formatDateKey(taskDate),
       };
     }
@@ -256,7 +248,7 @@ export default function DashboardScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.bg }]}>
-      <View style={styles.topBg} />
+      <View style={[styles.topBg, { backgroundColor: theme.topSurface }]} />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -265,95 +257,95 @@ export default function DashboardScreen() {
       >
         <View style={styles.headerRow}>
           <TouchableOpacity
-            style={styles.menuButton}
+            style={[styles.menuButton, { backgroundColor: theme.cardBg, borderColor: theme.border }]}
             onPress={() => {
               setDrawerVisible(true);
               setQuickActionsVisible(false);
             }}
             activeOpacity={0.8}
           >
-            <Ionicons name="menu-outline" size={24} color="#111" />
+            <Ionicons name="menu-outline" size={24} color={theme.text} />
           </TouchableOpacity>
 
           <View style={styles.headerCenter}>
-            <Text style={styles.hello}>Hi, {USER_NAME} 👋</Text>
-            <Text style={styles.subText}>Let's plan your day smartly</Text>
+            <Text style={[styles.hello, { color: theme.text }]}>Hi, {USER_NAME} 👋</Text>
+            <Text style={[styles.subText, { color: theme.subText }]}>{"Let's plan your day smartly"}</Text>
           </View>
 
           <TouchableOpacity 
-            style={styles.avatar} 
+            style={[styles.avatar, { backgroundColor: theme.softPrimary, borderColor: theme.border }]} 
             activeOpacity={0.8}
             onPress={() => router.push('/(tabs)/home/settings')}
           >
             {user?.profile_pic ? (
               <Image source={{ uri: user.profile_pic }} style={styles.avatarImage} />
             ) : (
-              <Text style={styles.avatarText}>{initials.charAt(0)}</Text>
+              <Text style={[styles.avatarText, { color: theme.primary }]}>{initials.charAt(0)}</Text>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.statsGrid}>
           <TouchableOpacity
-            style={[styles.statCard, styles.totalCard]}
+            style={[styles.statCard, { backgroundColor: theme.statCardTotal, borderColor: theme.border }]}
             onPress={() => setSelectedFilter('all')}
             activeOpacity={0.85}
           >
-            <Text style={styles.statNumber}>{totalCount}</Text>
-            <Text style={styles.statLabel}>Total Tasks</Text>
+            <Text style={[styles.statNumber, { color: '#fff' }]}>{totalCount}</Text>
+            <Text style={[styles.statLabel, { color: '#fff' }]}>Total Tasks</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.statCard, styles.completedCard]}
+            style={[styles.statCard, { backgroundColor: theme.statCardCompleted, borderColor: theme.border }]}
             onPress={() => setSelectedFilter('completed')}
             activeOpacity={0.85}
           >
-            <Text style={styles.statNumber}>{completedCount}</Text>
-            <Text style={styles.statLabel}>Completed</Text>
+            <Text style={[styles.statNumber, { color: '#fff' }]}>{completedCount}</Text>
+            <Text style={[styles.statLabel, { color: '#fff' }]}>Completed</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.statCard, styles.pendingCard]}
+            style={[styles.statCard, { backgroundColor: theme.statCardPending, borderColor: theme.border }]}
             onPress={() => setSelectedFilter('pending')}
             activeOpacity={0.85}
           >
-            <Text style={styles.statNumber}>{pendingCount}</Text>
-            <Text style={styles.statLabel}>Pending</Text>
+            <Text style={[styles.statNumber, { color: '#fff' }]}>{pendingCount}</Text>
+            <Text style={[styles.statLabel, { color: '#fff' }]}>Pending</Text>
           </TouchableOpacity>
 
-          <View style={[styles.statCard, styles.missedCard]}>
-            <Text style={styles.statNumber}>{missedCount}</Text>
-            <Text style={styles.statLabel}>Missed</Text>
+          <View style={[styles.statCard, { backgroundColor: theme.statCardMissed, borderColor: theme.border }]}>
+            <Text style={[styles.statNumber, { color: '#fff' }]}>{missedCount}</Text>
+            <Text style={[styles.statLabel, { color: '#fff' }]}>Missed</Text>
           </View>
         </View>
 
-        <View style={styles.progressCard}>
+        <View style={[styles.progressCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.progressHeader}>
             <View>
-              <Text style={styles.progressTitle}>Today's Progress</Text>
-              <Text style={styles.progressSubText}>
+              <Text style={[styles.progressTitle, { color: theme.text }]}>{"Today's Progress"}</Text>
+              <Text style={[styles.progressSubText, { color: theme.subText }]}>
                 {completedCount} of {totalCount} tasks completed
               </Text>
             </View>
 
-            <View style={styles.progressPercentBadge}>
-              <Text style={styles.progressPercentText}>{progressPercent}%</Text>
+            <View style={[styles.progressPercentBadge, { backgroundColor: theme.primary }]}>
+              <Text style={[styles.progressPercentText, { color: '#fff' }]}>{progressPercent}%</Text>
             </View>
           </View>
 
-          <View style={styles.progressBarTrack}>
-            <View style={[styles.progressBarFill, { width: `${progressPercent}%` }]} />
+          <View style={[styles.progressBarTrack, { backgroundColor: theme.isDark ? theme.border : theme.softPrimary }]}>
+            <View style={[styles.progressBarFill, { backgroundColor: theme.primary, width: `${progressPercent}%` }]} />
           </View>
         </View>
 
-        <View style={styles.calendarCard}>
+        <View style={[styles.calendarCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.calendarHeader}>
-            <Text style={styles.calendarTitle}>Calendar</Text>
+            <Text style={[styles.calendarTitle, { color: theme.text }]}>Calendar</Text>
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => setMonthModalVisible(true)}
             >
-              <Text style={styles.calendarLink}>Month view</Text>
+              <Text style={[styles.calendarLink, { color: theme.primary }]}>Month view</Text>
             </TouchableOpacity>
           </View>
 
@@ -365,14 +357,20 @@ export default function DashboardScreen() {
             {calendarDays.map((item, index) => (
               <TouchableOpacity
                 key={`${item.date}-${index}`}
-                style={[styles.dateChip, item.active && styles.dateChipActive]}
+                style={[
+                  styles.dateChip,
+                  {
+                    backgroundColor: item.active ? theme.primary : theme.inputBg,
+                    borderColor: item.active ? theme.primary : theme.border,
+                  }
+                ]}
                 activeOpacity={0.8}
                 onPress={() => setSelectedDate(item.fullDate)}
               >
-                <Text style={[styles.dayText, item.active && styles.dateChipTextActive]}>
+                <Text style={[styles.dayText, { color: item.active ? '#fff' : theme.subText }]}>
                   {item.day}
                 </Text>
-                <Text style={[styles.dateText, item.active && styles.dateChipTextActive]}>
+                <Text style={[styles.dateText, { color: item.active ? '#fff' : theme.text }]}>
                   {item.date}
                 </Text>
               </TouchableOpacity>
@@ -380,50 +378,73 @@ export default function DashboardScreen() {
           </ScrollView>
         </View>
 
-        <View style={styles.mainCard}>
+        <View style={[
+          styles.mainCard,
+          { 
+            backgroundColor: theme.primary,
+            borderWidth: theme.isDark ? 1 : 0,
+            borderColor: theme.border
+          }
+        ]}>
           <View style={styles.mainCardHeader}>
             <View style={styles.mainTitleWrap}>
-              <Text style={styles.cardTitle}>Today's Plan</Text>
-              <Text style={styles.cardDate}>{displaySelectedDate}</Text>
+              <Text style={[styles.cardTitle, { color: '#fff' }]}>{"Today's Plan"}</Text>
+              <Text style={[styles.cardDate, { color: '#e0e0ff' }]}>{displaySelectedDate}</Text>
             </View>
 
             <View style={styles.actionPillsRow}>
               <TouchableOpacity
-                style={styles.aiTaskPill}
+                style={[styles.aiTaskPill, { backgroundColor: theme.secondary }]}
                 activeOpacity={0.85}
                 onPress={() => navigateWithClose('/(tabs)/home/AISchedulerScreen')}
               >
-                <Ionicons name="sparkles-outline" size={14} color="#111" />
-                <Text style={styles.aiTaskPillText}>Generate Plan</Text>
+                <Ionicons name="sparkles-outline" size={14} color="#fff" />
+                <Text style={[styles.aiTaskPillText, { color: '#fff' }]}>Generate Plan</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.addTaskPill}
+                style={[styles.addTaskPill, { backgroundColor: theme.cardBg }]}
                 activeOpacity={0.85}
                 onPress={() => navigateWithClose('/(tabs)/home/add-task')}
               >
-                <Text style={styles.addTaskPillText}>+ Add</Text>
+                <Text style={[styles.addTaskPillText, { color: theme.text }]}>+ Add</Text>
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.filterRow}>
             <TouchableOpacity
-              style={[styles.filterChip, selectedFilter === 'all' && styles.filterChipActive]}
+              style={[
+                styles.filterChip,
+                {
+                  backgroundColor: selectedFilter === 'all' ? '#fff' : 'rgba(255,255,255,0.2)',
+                  borderColor: 'rgba(255,255,255,0.1)'
+                }
+              ]}
               onPress={() => setSelectedFilter('all')}
             >
-              <Text style={[styles.filterText, selectedFilter === 'all' && styles.filterTextActive]}>
+              <Text style={[
+                styles.filterText,
+                { color: selectedFilter === 'all' ? theme.primary : '#fff' }
+              ]}>
                 All
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[styles.filterChip, selectedFilter === 'pending' && styles.filterChipActive]}
+              style={[
+                styles.filterChip,
+                {
+                  backgroundColor: selectedFilter === 'pending' ? '#fff' : 'rgba(255,255,255,0.2)',
+                  borderColor: 'rgba(255,255,255,0.1)'
+                }
+              ]}
               onPress={() => setSelectedFilter('pending')}
             >
-              <Text
-                style={[styles.filterText, selectedFilter === 'pending' && styles.filterTextActive]}
-              >
+              <Text style={[
+                styles.filterText,
+                { color: selectedFilter === 'pending' ? theme.primary : '#fff' }
+              ]}>
                 Pending
               </Text>
             </TouchableOpacity>
@@ -431,16 +452,17 @@ export default function DashboardScreen() {
             <TouchableOpacity
               style={[
                 styles.filterChip,
-                selectedFilter === 'completed' && styles.filterChipActive,
+                {
+                  backgroundColor: selectedFilter === 'completed' ? '#fff' : 'rgba(255,255,255,0.2)',
+                  borderColor: 'rgba(255,255,255,0.1)'
+                }
               ]}
               onPress={() => setSelectedFilter('completed')}
             >
-              <Text
-                style={[
-                  styles.filterText,
-                  selectedFilter === 'completed' && styles.filterTextActive,
-                ]}
-              >
+              <Text style={[
+                styles.filterText,
+                { color: selectedFilter === 'completed' ? theme.primary : '#fff' }
+              ]}>
                 Completed
               </Text>
             </TouchableOpacity>
@@ -449,24 +471,26 @@ export default function DashboardScreen() {
 
         <View style={styles.taskList}>
           {filteredTasks.map((task) => (
-            <View key={task.id} style={styles.taskCard}>
+            <View key={task.id} style={[styles.taskCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
               <View style={{ flex: 1, paddingRight: 12 }}>
-                <Text style={styles.taskTitle}>{task.title}</Text>
-                <Text style={styles.taskTime}>{task.time}</Text>
+                <Text style={[styles.taskTitle, { color: theme.text }]}>{task.title}</Text>
+                <Text style={[styles.taskTime, { color: theme.subText }]}>{task.time}</Text>
               </View>
 
               <View
                 style={[
                   styles.statusBadge,
-                  task.status === 'pending' ? styles.pendingBadge : styles.completedBadge,
+                  task.status === 'pending'
+                    ? { backgroundColor: theme.isDark ? 'rgba(59,130,246,0.16)' : theme.softAccent }
+                    : { backgroundColor: theme.isDark ? 'rgba(34,197,94,0.16)' : '#ECFDF5' },
                 ]}
               >
                 <Text
                   style={[
                     styles.statusText,
                     task.status === 'pending'
-                      ? styles.pendingBadgeText
-                      : styles.completedBadgeText,
+                      ? { color: theme.secondary }
+                      : { color: theme.success },
                   ]}
                 >
                   {task.status === 'pending' ? 'Pending' : 'Completed'}
@@ -476,21 +500,21 @@ export default function DashboardScreen() {
           ))}
 
           {filteredTasks.length === 0 && (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>No tasks for selected date</Text>
-              <Text style={styles.emptyText}>
+            <View style={[styles.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>No tasks for selected date</Text>
+              <Text style={[styles.emptyText, { color: theme.subText }]}>
                 This day has no tasks in the selected filter.
               </Text>
             </View>
           )}
         </View>
 
-        <View style={styles.tipCard}>
+        <View style={[styles.tipCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.tipHeader}>
-            <Ionicons name="bulb-outline" size={18} color="#111" />
-            <Text style={styles.tipTitle}>Productivity Tip</Text>
+            <Ionicons name="bulb-outline" size={18} color={theme.primary} />
+            <Text style={[styles.tipTitle, { color: theme.text }]}>Productivity Tip</Text>
           </View>
-          <Text style={styles.tipText}>
+          <Text style={[styles.tipText, { color: theme.subText }]}>
             Finish your highest-priority task first before switching to smaller tasks.
           </Text>
         </View>
@@ -502,14 +526,14 @@ export default function DashboardScreen() {
         animationType="slide"
         onRequestClose={() => setMonthModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}>
           <Pressable
             style={styles.modalBackdrop}
             onPress={() => setMonthModalVisible(false)}
           />
 
-          <View style={styles.modalSheet}>
-            <View style={styles.modalHandle} />
+          <View style={[styles.modalSheet, { backgroundColor: theme.cardBg }]}>
+            <View style={[styles.modalHandle, { backgroundColor: theme.border }]} />
 
             <View style={styles.modalHeader}>
               <TouchableOpacity
@@ -520,10 +544,10 @@ export default function DashboardScreen() {
                   setSelectedDate(prevMonth);
                 }}
               >
-                <Ionicons name="chevron-back" size={22} color="#111" />
+                <Ionicons name="chevron-back" size={22} color={theme.text} />
               </TouchableOpacity>
 
-              <Text style={styles.modalTitle}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>
                 {new Intl.DateTimeFormat('en-GB', {
                   month: 'long',
                   year: 'numeric',
@@ -538,13 +562,13 @@ export default function DashboardScreen() {
                   setSelectedDate(nextMonth);
                 }}
               >
-                <Ionicons name="chevron-forward" size={22} color="#111" />
+                <Ionicons name="chevron-forward" size={22} color={theme.text} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.weekHeader}>
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                <Text key={day} style={styles.weekHeaderText}>
+                <Text key={day} style={[styles.weekHeaderText, { color: theme.subText }]}>
                   {day}
                 </Text>
               ))}
@@ -561,47 +585,48 @@ export default function DashboardScreen() {
                   <View
                     style={[
                       styles.dayNumberWrap,
-                      item.isSelected && styles.selectedDayWrap,
-                      item.isToday && !item.isSelected && styles.todayDayWrap,
+                      item.isSelected && { backgroundColor: theme.primary },
+                      item.isToday && !item.isSelected && { backgroundColor: theme.softPrimary },
                     ]}
                   >
                     <Text
                       style={[
                         styles.dayNumber,
-                        !item.currentMonth && styles.otherMonthText,
-                        item.isSelected && styles.selectedDayText,
-                        item.isToday && !item.isSelected && styles.todayDayText,
+                        { color: theme.text },
+                        !item.currentMonth && { color: theme.isDark ? '#4b5563' : '#bbb' },
+                        item.isSelected && { color: '#fff' },
+                        item.isToday && !item.isSelected && { color: theme.primary },
                       ]}
                     >
                       {item.label}
                     </Text>
                   </View>
-                  {item.hasTasks && <View style={styles.dot} />}
+                  {item.hasTasks && <View style={[styles.dot, { backgroundColor: theme.primary }]} />}
                 </TouchableOpacity>
               ))}
             </View>
 
             <View style={styles.legendRow}>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#b144db' }]} />
-                <Text style={styles.legendText}>Has tasks</Text>
+                <View style={[styles.legendDot, { backgroundColor: theme.primary }]} />
+                <Text style={[styles.legendText, { color: theme.subText }]}>Has tasks</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#d8a9f2' }]} />
-                <Text style={styles.legendText}>Selected date</Text>
+                <View style={[styles.legendDot, { backgroundColor: theme.primary, opacity: 0.6 }]} />
+                <Text style={[styles.legendText, { color: theme.subText }]}>Selected date</Text>
               </View>
               <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#d8eef7' }]} />
-                <Text style={styles.legendText}>Today</Text>
+                <View style={[styles.legendDot, { backgroundColor: theme.softPrimary }]} />
+                <Text style={[styles.legendText, { color: theme.subText }]}>Today</Text>
               </View>
             </View>
 
-            <View style={styles.selectedTasksCard}>
+            <View style={[styles.selectedTasksCard, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
               <View style={styles.selectedTasksHeader}>
-                <Text style={styles.selectedTasksTitle}>Selected Day</Text>
-                <Text style={styles.selectedTasksDate}>{formattedSelectedDate}</Text>
-                <View style={styles.selectedTasksCount}>
-                  <Text style={styles.selectedTasksCountText}>
+                <Text style={[styles.selectedTasksTitle, { color: theme.text }]}>Selected Day</Text>
+                <Text style={[styles.selectedTasksDate, { color: theme.subText }]}>{formattedSelectedDate}</Text>
+                <View style={[styles.selectedTasksCount, { backgroundColor: theme.primary }]}>
+                  <Text style={[styles.selectedTasksCountText, { color: '#fff' }]}>
                     {selectedDateTasks.length} Tasks
                   </Text>
                 </View>
@@ -609,26 +634,26 @@ export default function DashboardScreen() {
 
               {selectedDateTasks.length > 0 ? (
                 selectedDateTasks.map((task) => (
-                  <View key={task.id} style={styles.modalTaskRow}>
+                  <View key={task.id} style={[styles.modalTaskRow, { borderBottomColor: theme.border }]}>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.modalTaskTitle}>{task.title}</Text>
-                      <Text style={styles.modalTaskTime}>{task.time}</Text>
+                      <Text style={[styles.modalTaskTitle, { color: theme.text }]}>{task.title}</Text>
+                      <Text style={[styles.modalTaskTime, { color: theme.subText }]}>{task.time}</Text>
                     </View>
 
                     <View
                       style={[
                         styles.statusBadge,
                         task.status === 'pending'
-                          ? styles.pendingBadge
-                          : styles.completedBadge,
+                          ? { backgroundColor: theme.isDark ? 'rgba(59,130,246,0.16)' : theme.softAccent }
+                          : { backgroundColor: theme.isDark ? 'rgba(34,197,94,0.16)' : '#ECFDF5' },
                       ]}
                     >
                       <Text
                         style={[
                           styles.statusText,
                           task.status === 'pending'
-                            ? styles.pendingBadgeText
-                            : styles.completedBadgeText,
+                            ? { color: theme.secondary }
+                            : { color: theme.success },
                         ]}
                       >
                         {task.status === 'pending' ? 'Pending' : 'Completed'}
@@ -638,15 +663,15 @@ export default function DashboardScreen() {
                 ))
               ) : (
                 <View style={styles.emptyModalTasks}>
-                  <Text style={styles.emptyTitle}>No tasks</Text>
-                  <Text style={styles.emptyText}>
+                  <Text style={[styles.emptyTitle, { color: theme.text }]}>No tasks</Text>
+                  <Text style={[styles.emptyText, { color: theme.subText }]}>
                     No tasks available on this selected date.
                   </Text>
                 </View>
               )}
 
               <TouchableOpacity
-                style={styles.goToDateBtn}
+                style={[styles.goToDateBtn, { backgroundColor: theme.primary }]}
                 activeOpacity={0.85}
                 onPress={() => setMonthModalVisible(false)}
               >
@@ -662,8 +687,8 @@ export default function DashboardScreen() {
           <Pressable style={styles.overlayBackdrop} onPress={() => setDrawerVisible(false)} />
 
           <View style={styles.drawerWrap}>
-            <View style={styles.drawer}>
-              <View style={styles.drawerTop}>
+            <View style={[styles.drawer, { backgroundColor: theme.cardBg }]}>
+              <View style={[styles.drawerTop, { backgroundColor: theme.primary }]}>
                 <View style={styles.drawerHeader}>
                   <View style={{ width: 28, height: 28 }} />
                   <TouchableOpacity
@@ -689,7 +714,7 @@ export default function DashboardScreen() {
                       {USER_NAME}
                     </Text>
                     <Text style={styles.profileSub} numberOfLines={1}>
-                      Let's plan your day smartly
+                      {"Let's plan your day smartly"}
                     </Text>
                   </View>
                 </View>
@@ -702,18 +727,25 @@ export default function DashboardScreen() {
                 {menuItems.map((item, index) => (
                   <TouchableOpacity
                     key={index}
-                    style={[styles.menuItem, item.active && styles.menuItemActive]}
+                    style={[
+                      styles.menuItem,
+                      item.active && { backgroundColor: theme.activeBg }
+                    ]}
                     activeOpacity={0.85}
                     onPress={item.onPress}
                   >
-                    <View style={styles.menuIconWrap}>
+                    <View style={[styles.menuIconWrap, { backgroundColor: theme.inputBg }]}>
                       <Ionicons
                         name={item.icon as any}
                         size={19}
-                        color={item.active ? '#a14ccf' : '#a861cf'}
+                        color={item.active ? theme.activeText : theme.subText}
                       />
                     </View>
-                    <Text style={[styles.menuText, item.active && styles.menuTextActive]}>
+                    <Text style={[
+                      styles.menuText,
+                      { color: theme.text },
+                      item.active && { color: theme.activeText, fontWeight: '800' }
+                    ]}>
                       {item.title}
                     </Text>
                   </TouchableOpacity>
@@ -729,16 +761,16 @@ export default function DashboardScreen() {
           style={styles.quickActionOverlay}
           onPress={() => setQuickActionsVisible(false)}
         >
-          <View style={styles.quickActionsMenu}>
+          <View style={[styles.quickActionsMenu, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
             <TouchableOpacity
               style={styles.quickActionItem}
               activeOpacity={0.85}
               onPress={() => navigateWithClose('/(tabs)/home/add-task')}
             >
-              <View style={styles.quickActionIcon}>
-                <Ionicons name="add-circle-outline" size={18} color="#a14ccf" />
+              <View style={[styles.quickActionIcon, { backgroundColor: theme.inputBg }]}>
+                <Ionicons name="add-circle-outline" size={18} color={theme.primary} />
               </View>
-              <Text style={styles.quickActionText}>Add Task</Text>
+              <Text style={[styles.quickActionText, { color: theme.text }]}>Add Task</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -746,10 +778,10 @@ export default function DashboardScreen() {
               activeOpacity={0.85}
               onPress={() => navigateWithClose('/(tabs)/home/today-plan')}
             >
-              <View style={styles.quickActionIcon}>
-                <Ionicons name="calendar-outline" size={18} color="#a14ccf" />
+              <View style={[styles.quickActionIcon, { backgroundColor: theme.inputBg }]}>
+                <Ionicons name="calendar-outline" size={18} color={theme.primary} />
               </View>
-              <Text style={styles.quickActionText}>Today's Plan</Text>
+              <Text style={[styles.quickActionText, { color: theme.text }]}>{"Today's Plan"}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -757,10 +789,10 @@ export default function DashboardScreen() {
               activeOpacity={0.85}
               onPress={() => navigateWithClose('/(tabs)/tasks')}
             >
-              <View style={styles.quickActionIcon}>
-                <Ionicons name="list-outline" size={18} color="#a14ccf" />
+              <View style={[styles.quickActionIcon, { backgroundColor: theme.inputBg }]}>
+                <Ionicons name="list-outline" size={18} color={theme.primary} />
               </View>
-              <Text style={styles.quickActionText}>Tasks</Text>
+              <Text style={[styles.quickActionText, { color: theme.text }]}>Tasks</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -768,17 +800,17 @@ export default function DashboardScreen() {
               activeOpacity={0.85}
               onPress={() => navigateWithClose('/(tabs)/home/AISchedulerScreen')}
             >
-              <View style={styles.quickActionIcon}>
-                <Ionicons name="sparkles-outline" size={18} color="#a14ccf" />
+              <View style={[styles.quickActionIcon, { backgroundColor: theme.inputBg }]}>
+                <Ionicons name="sparkles-outline" size={18} color={theme.primary} />
               </View>
-              <Text style={styles.quickActionText}>AI Scheduler</Text>
+              <Text style={[styles.quickActionText, { color: theme.text }]}>AI Scheduler</Text>
             </TouchableOpacity>
           </View>
         </Pressable>
       )}
 
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: theme.primary }]}
         activeOpacity={0.9}
         onPress={() => {
           setQuickActionsVisible((prev) => !prev);
@@ -792,8 +824,8 @@ export default function DashboardScreen() {
         />
       </TouchableOpacity>
 
-      <View style={styles.fabLabelWrap}>
-        <Text style={styles.fabLabel}>AI Plan</Text>
+      <View style={[styles.fabLabelWrap, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+        <Text style={[styles.fabLabel, { color: theme.primary }]}>AI Plan</Text>
       </View>
     </View>
   );
@@ -815,7 +847,6 @@ function getDateWithOffset(days: number) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#f7f4f8',
   },
   topBg: {
     position: 'absolute',
@@ -823,7 +854,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 180,
-    backgroundColor: '#efc9f6',
     borderBottomLeftRadius: 26,
     borderBottomRightRadius: 26,
   },
@@ -844,9 +874,7 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ececec',
   },
   headerCenter: {
     flex: 1,
@@ -855,22 +883,18 @@ const styles = StyleSheet.create({
   hello: {
     fontSize: 20,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 2,
   },
   subText: {
     fontSize: 13,
-    color: '#555',
   },
   avatar: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#eedcf7',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#e4c9f0',
     overflow: 'hidden',
   },
   avatarImage: {
@@ -880,7 +904,6 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#7e329d',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -895,36 +918,23 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: '#ececec',
   },
-  totalCard: {
-    backgroundColor: '#fff',
-  },
-  completedCard: {
-    backgroundColor: '#dff8de',
-  },
-  pendingCard: {
-    backgroundColor: '#dff3ff',
-  },
-  missedCard: {
-    backgroundColor: '#ffd7d7',
-  },
+  totalCard: {},
+  completedCard: {},
+  pendingCard: {},
+  missedCard: {},
   statNumber: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 13,
-    color: '#333',
     fontWeight: '700',
   },
   progressCard: {
-    backgroundColor: '#fff',
     borderRadius: 20,
     borderWidth: 1.2,
-    borderColor: '#ececec',
     padding: 14,
     marginBottom: 14,
   },
@@ -938,18 +948,15 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 3,
   },
   progressSubText: {
     fontSize: 13,
-    color: '#666',
   },
   progressPercentBadge: {
     minWidth: 58,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#f3e1fb',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 12,
@@ -957,24 +964,19 @@ const styles = StyleSheet.create({
   progressPercentText: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#9f3dd1',
   },
   progressBarTrack: {
     height: 12,
     borderRadius: 999,
-    backgroundColor: '#f1e5f7',
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
     borderRadius: 999,
-    backgroundColor: '#b144db',
   },
   calendarCard: {
-    backgroundColor: '#fff',
     borderRadius: 20,
     borderWidth: 1.2,
-    borderColor: '#ececec',
     paddingVertical: 14,
     paddingHorizontal: 14,
     marginBottom: 14,
@@ -988,12 +990,10 @@ const styles = StyleSheet.create({
   calendarTitle: {
     fontSize: 17,
     fontWeight: '800',
-    color: '#111',
   },
   calendarLink: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#c14de7',
   },
   calendarRow: {
     gap: 10,
@@ -1005,30 +1005,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#faf7fb',
     borderWidth: 1,
-    borderColor: '#f0e4f5',
   },
-  dateChipActive: {
-    backgroundColor: '#111',
-    borderColor: '#111',
-  },
+  dateChipActive: {},
   dayText: {
     fontSize: 11,
-    color: '#777',
     marginBottom: 2,
     fontWeight: '700',
   },
   dateText: {
     fontSize: 16,
-    color: '#111',
     fontWeight: '800',
   },
-  dateChipTextActive: {
-    color: '#fff',
-  },
+  dateChipTextActive: {},
   mainCard: {
-    backgroundColor: '#e8c4ef',
     borderRadius: 22,
     padding: 14,
     marginBottom: 14,
@@ -1046,12 +1036,10 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 21,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 4,
   },
   cardDate: {
     fontSize: 13,
-    color: '#555',
   },
   actionPillsRow: {
     flexDirection: 'row',
@@ -1067,25 +1055,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#f8eab4',
   },
   aiTaskPillText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#111',
   },
   addTaskPill: {
     paddingHorizontal: 12,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
   addTaskPillText: {
     fontSize: 12,
     fontWeight: '800',
-    color: '#111',
   },
   filterRow: {
     flexDirection: 'row',
@@ -1096,32 +1080,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     height: 34,
     borderRadius: 17,
-    backgroundColor: 'rgba(255,255,255,0.58)',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(17,17,17,0.08)',
   },
-  filterChipActive: {
-    backgroundColor: '#111',
-  },
+  filterChipActive: {},
   filterText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#111',
   },
-  filterTextActive: {
-    color: '#fff',
-  },
+  filterTextActive: {},
   taskList: {
     gap: 10,
     marginBottom: 16,
   },
   taskCard: {
-    backgroundColor: '#fff',
     borderRadius: 18,
     borderWidth: 1.2,
-    borderColor: '#ececec',
     paddingVertical: 13,
     paddingHorizontal: 14,
     flexDirection: 'row',
@@ -1131,12 +1106,10 @@ const styles = StyleSheet.create({
   taskTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 3,
   },
   taskTime: {
     fontSize: 12.5,
-    color: '#666',
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -1145,26 +1118,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pendingBadge: {
-    backgroundColor: '#dff3ff',
-  },
-  completedBadge: {
-    backgroundColor: '#dff8de',
-  },
+  pendingBadge: {},
+  completedBadge: {},
   statusText: {
     fontSize: 11.5,
     fontWeight: '800',
   },
-  pendingBadgeText: {
-    color: '#126a8a',
-  },
-  completedBadgeText: {
-    color: '#1f7a31',
-  },
+  pendingBadgeText: {},
+  completedBadgeText: {},
   tipCard: {
-    backgroundColor: '#fff',
     borderWidth: 1.2,
-    borderColor: '#ececec',
     borderRadius: 18,
     padding: 16,
     marginBottom: 12,
@@ -1178,41 +1141,33 @@ const styles = StyleSheet.create({
   tipTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#111',
   },
   tipText: {
     fontSize: 13.5,
     lineHeight: 20,
-    color: '#555',
   },
   emptyCard: {
-    backgroundColor: '#fff',
     borderRadius: 18,
     padding: 16,
     borderWidth: 1.2,
-    borderColor: '#ececec',
   },
   emptyTitle: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 4,
   },
   emptyText: {
     fontSize: 13,
-    color: '#666',
     lineHeight: 19,
   },
   modalOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.18)',
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
   },
   modalSheet: {
-    backgroundColor: '#fff',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 18,
@@ -1224,7 +1179,6 @@ const styles = StyleSheet.create({
     width: 58,
     height: 5,
     borderRadius: 999,
-    backgroundColor: '#d5ccd9',
     alignSelf: 'center',
     marginBottom: 14,
   },
@@ -1238,7 +1192,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: '#111',
   },
   weekHeader: {
     flexDirection: 'row',
@@ -1250,7 +1203,6 @@ const styles = StyleSheet.create({
     width: '14.28%',
     textAlign: 'center',
     fontSize: 12,
-    color: '#777',
     fontWeight: '600',
   },
   monthGrid: {
@@ -1270,32 +1222,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  selectedDayWrap: {
-    backgroundColor: '#b144db',
-  },
-  todayDayWrap: {
-    backgroundColor: '#dff3ff',
-  },
+  selectedDayWrap: {},
+  todayDayWrap: {},
   dayNumber: {
     fontSize: 16,
-    color: '#111',
     fontWeight: '700',
   },
-  otherMonthText: {
-    color: '#bbb',
-  },
-  selectedDayText: {
-    color: '#fff',
-  },
-  todayDayText: {
-    color: '#111',
-  },
+  otherMonthText: {},
+  selectedDayText: {},
+  todayDayText: {},
   dot: {
     marginTop: 5,
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#b144db',
   },
   legendRow: {
     flexDirection: 'row',
@@ -1314,14 +1254,11 @@ const styles = StyleSheet.create({
   },
   legendText: {
     fontSize: 12,
-    color: '#666',
   },
   selectedTasksCard: {
-    backgroundColor: '#faf7fb',
     borderRadius: 18,
     padding: 14,
     borderWidth: 1,
-    borderColor: '#f0e4f5',
   },
   selectedTasksHeader: {
     marginBottom: 10,
@@ -1329,12 +1266,10 @@ const styles = StyleSheet.create({
   selectedTasksTitle: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 2,
   },
   selectedTasksDate: {
     fontSize: 13,
-    color: '#666',
     marginBottom: 8,
   },
   selectedTasksCount: {
@@ -1342,12 +1277,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    backgroundColor: '#f3e1fb',
   },
   selectedTasksCountText: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#9f3dd1',
   },
   modalTaskRow: {
     flexDirection: 'row',
@@ -1355,17 +1288,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   modalTaskTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: '#111',
     marginBottom: 3,
   },
   modalTaskTime: {
     fontSize: 12,
-    color: '#666',
   },
   emptyModalTasks: {
     paddingVertical: 10,
@@ -1376,10 +1306,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#b144db',
   },
   goToDateBtnText: {
-    color: '#fff',
     fontSize: 14,
     fontWeight: '800',
   },
@@ -1401,7 +1329,6 @@ const styles = StyleSheet.create({
   },
   drawer: {
     flex: 1,
-    backgroundColor: '#fff',
     borderTopRightRadius: 26,
     borderBottomRightRadius: 70,
     overflow: 'hidden',
@@ -1412,7 +1339,6 @@ const styles = StyleSheet.create({
     elevation: 12,
   },
   drawerTop: {
-    backgroundColor: '#c78ae9',
     paddingBottom: 14,
   },
   drawerHeader: {
@@ -1484,14 +1410,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 16,
   },
-  menuItemActive: {
-    backgroundColor: '#f3e9fb',
-  },
+  menuItemActive: {},
   menuIconWrap: {
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: '#f8f1fc',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -1499,12 +1422,8 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 15.5,
     fontWeight: '700',
-    color: '#111',
   },
-  menuTextActive: {
-    color: '#a14ccf',
-    fontWeight: '800',
-  },
+  menuTextActive: {},
   quickActionOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
@@ -1515,7 +1434,6 @@ const styles = StyleSheet.create({
     right: 24,
     bottom: 110,
     width: 190,
-    backgroundColor: '#fff',
     borderRadius: 22,
     paddingVertical: 10,
     paddingHorizontal: 10,
@@ -1525,7 +1443,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     elevation: 14,
     borderWidth: 1,
-    borderColor: '#f0e6f5',
   },
   quickActionItem: {
     flexDirection: 'row',
@@ -1538,7 +1455,6 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#f8f1fc',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -1546,7 +1462,6 @@ const styles = StyleSheet.create({
   quickActionText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#111',
   },
   fab: {
     position: 'absolute',
@@ -1555,7 +1470,6 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: '#b144db',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#000',
@@ -1569,17 +1483,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 18,
     bottom: 82,
-    backgroundColor: '#ffffff',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#eadcf1',
     zIndex: 19,
   },
   fabLabel: {
     fontSize: 11,
     fontWeight: '800',
-    color: '#9f3dd1',
   },
 });

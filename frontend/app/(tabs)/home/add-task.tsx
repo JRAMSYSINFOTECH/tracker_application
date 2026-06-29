@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Platform } from 'react-native';
 import { useTaskContext } from '../../../constants/src/context/TaskContext';
+import { useTheme } from '../../../constants/src/context/ThemeContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { scheduleTaskNotification } from '../../../services/notificationService';
 
@@ -23,6 +24,7 @@ type StatusType = 'To Do' | 'In Progress' | 'Completed';
 export default function AddTaskScreen() {
   const router = useRouter();
   const { addTask } = useTaskContext();
+  const { theme } = useTheme();
 
   const [title, setTitle] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -194,7 +196,7 @@ export default function AddTaskScreen() {
     selected,
     onPress,
     icon,
-    activeColor = '#df5ca8',
+    activeColor = theme.primary,
   }: {
     label: string;
     selected: boolean;
@@ -205,11 +207,17 @@ export default function AddTaskScreen() {
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={onPress}
-      style={[styles.chip, selected && styles.chipSelected]}
+      style={[
+        styles.chip,
+        {
+          backgroundColor: selected ? theme.softPrimary : theme.cardBg,
+          borderColor: selected ? activeColor : theme.border,
+        },
+      ]}
     >
       <View style={styles.chipInner}>
         {icon ? <View style={styles.chipIcon}>{icon}</View> : null}
-        <Text style={[styles.chipText, selected && { color: activeColor, fontWeight: '700' }]}>
+        <Text style={[styles.chipText, { color: selected ? activeColor : theme.text }, selected && { fontWeight: '700' }]}>
           {label}
         </Text>
       </View>
@@ -217,46 +225,46 @@ export default function AddTaskScreen() {
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.topShape} />
+    <View style={[styles.container, { backgroundColor: theme.bg }]}>
+      <View style={[styles.topShape, { backgroundColor: theme.topSurface }]} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#111" />
+          <Ionicons name="chevron-back" size={24} color={theme.text} />
         </TouchableOpacity>
 
-        <Text style={styles.title}>Add Task</Text>
-        <Text style={styles.subtitle}>Create a task and organize your work clearly.</Text>
+        <Text style={[styles.title, { color: theme.text }]}>Add Task</Text>
+        <Text style={[styles.subtitle, { color: theme.subText }]}>Create a task and organize your work clearly.</Text>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.leftIconBox}>
-              <Ionicons name="create-outline" size={20} color="#df5ca8" />
+            <View style={[styles.leftIconBox, { backgroundColor: theme.softPrimary }]}>
+              <Ionicons name="create-outline" size={20} color={theme.primary} />
             </View>
-            <Text style={styles.cardTitle}>Task Title</Text>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Task Title</Text>
           </View>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
             value={title}
             onChangeText={setTitle}
             placeholder="Enter task title"
-            placeholderTextColor="#7A6D80"
+            placeholderTextColor={theme.subText}
           />
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.leftIconBox}>
-              <Ionicons name="calendar-outline" size={20} color="#df5ca8" />
+            <View style={[styles.leftIconBox, { backgroundColor: theme.softPrimary }]}>
+              <Ionicons name="calendar-outline" size={20} color={theme.primary} />
             </View>
-            <Text style={styles.cardTitle}>Task Deadline</Text>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Task Deadline</Text>
           </View>
 
           {Platform.OS === 'web' ? (
             <View style={styles.deadlineRow}>
               <View style={styles.deadlineBlock}>
-                <Text style={styles.fieldLabel}>Date</Text>
-                <View style={styles.inputWithIcon}>
+                <Text style={[styles.fieldLabel, { color: theme.subText }]}>Date</Text>
+                <View style={[styles.inputWithIcon, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
                   <input
                     type="date"
                     value={deadline}
@@ -271,7 +279,7 @@ export default function AddTaskScreen() {
                       outline: 'none',
                       background: 'transparent',
                       fontSize: 15,
-                      color: '#111',
+                      color: theme.text,
                       fontFamily: 'inherit',
                       padding: '10px 0',
                     }}
@@ -280,8 +288,8 @@ export default function AddTaskScreen() {
               </View>
 
               <View style={styles.deadlineBlock}>
-                <Text style={styles.fieldLabel}>Time</Text>
-                <View style={styles.inputWithIcon}>
+                <Text style={[styles.fieldLabel, { color: theme.subText }]}>Time</Text>
+                <View style={[styles.inputWithIcon, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
                   <input
                     type="time"
                     value={time ? `${(() => {
@@ -307,7 +315,7 @@ export default function AddTaskScreen() {
                       outline: 'none',
                       background: 'transparent',
                       fontSize: 15,
-                      color: '#111',
+                      color: theme.text,
                       fontFamily: 'inherit',
                       padding: '10px 0',
                     }}
@@ -319,39 +327,39 @@ export default function AddTaskScreen() {
             <>
               <View style={styles.deadlineRow}>
                 <View style={styles.deadlineBlock}>
-                  <Text style={styles.fieldLabel}>Date</Text>
+                  <Text style={[styles.fieldLabel, { color: theme.subText }]}>Date</Text>
 
                   <TouchableOpacity
-                    style={styles.inputWithIcon}
+                    style={[styles.inputWithIcon, { backgroundColor: theme.inputBg, borderColor: theme.border }]}
                     onPress={() => setShowDatePicker(true)}
                   >
-                    <Text style={styles.inlineInput}>
+                    <Text style={[styles.inlineInput, { color: theme.text }]}>
                       {deadline || 'Select date'}
                     </Text>
 
                     <Ionicons
                       name="calendar-outline"
                       size={20}
-                      color="#df5ca8"
+                      color={theme.primary}
                     />
                   </TouchableOpacity>
                 </View>
 
                 <View style={styles.deadlineBlock}>
-                  <Text style={styles.fieldLabel}>Time</Text>
+                  <Text style={[styles.fieldLabel, { color: theme.subText }]}>Time</Text>
 
                   <TouchableOpacity
-                    style={styles.inputWithIcon}
+                    style={[styles.inputWithIcon, { backgroundColor: theme.inputBg, borderColor: theme.border }]}
                     onPress={() => setShowTimePicker(true)}
                   >
-                    <Text style={styles.inlineInput}>
+                    <Text style={[styles.inlineInput, { color: theme.text }]}>
                       {time || 'Select time'}
                     </Text>
 
                     <Ionicons
                       name="time-outline"
                       size={20}
-                      color="#df5ca8"
+                      color={theme.primary}
                     />
                   </TouchableOpacity>
                 </View>
@@ -386,7 +394,7 @@ export default function AddTaskScreen() {
                 <Ionicons
                   name="sunny-outline"
                   size={18}
-                  color={meridiem === 'AM' ? '#df5ca8' : '#666'}
+                  color={meridiem === 'AM' ? theme.primary : theme.subText}
                 />
               }
             />
@@ -399,7 +407,7 @@ export default function AddTaskScreen() {
                 <Ionicons
                   name="moon-outline"
                   size={18}
-                  color={meridiem === 'PM' ? '#df5ca8' : '#666'}
+                  color={meridiem === 'PM' ? theme.primary : theme.subText}
                 />
               }
             />
@@ -407,143 +415,143 @@ export default function AddTaskScreen() {
         </View>
 
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.leftIconBox}>
-              <Ionicons name="reload-outline" size={20} color="#df5ca8" />
+            <View style={[styles.leftIconBox, { backgroundColor: theme.softPrimary }]}>
+              <Ionicons name="reload-outline" size={20} color={theme.primary} />
             </View>
-            <Text style={styles.cardTitle}>Repeat</Text>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Repeat</Text>
           </View>
           <View style={styles.chipGrid}>
             <Chip
               label="Once"
               selected={repeat === 'Once'}
               onPress={() => setRepeat('Once')}
-              icon={<Ionicons name="radio-button-on" size={18} color={repeat === 'Once' ? '#df5ca8' : '#666'} />}
+              icon={<Ionicons name="radio-button-on" size={18} color={repeat === 'Once' ? theme.primary : theme.subText} />}
             />
             <Chip
               label="Daily"
               selected={repeat === 'Daily'}
               onPress={() => setRepeat('Daily')}
-              icon={<Ionicons name="calendar-outline" size={18} color={repeat === 'Daily' ? '#df5ca8' : '#666'} />}
+              icon={<Ionicons name="calendar-outline" size={18} color={repeat === 'Daily' ? theme.primary : theme.subText} />}
             />
             <Chip
               label="Weekly"
               selected={repeat === 'Weekly'}
               onPress={() => setRepeat('Weekly')}
-              icon={<Ionicons name="calendar-outline" size={18} color={repeat === 'Weekly' ? '#df5ca8' : '#666'} />}
+              icon={<Ionicons name="calendar-outline" size={18} color={repeat === 'Weekly' ? theme.primary : theme.subText} />}
             />
             <Chip
               label="Custom"
               selected={repeat === 'Custom'}
               onPress={() => setRepeat('Custom')}
-              icon={<Ionicons name="options-outline" size={18} color={repeat === 'Custom' ? '#df5ca8' : '#666'} />}
+              icon={<Ionicons name="options-outline" size={18} color={repeat === 'Custom' ? theme.primary : theme.subText} />}
             />
           </View>
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.leftIconBox}>
-              <Ionicons name="flag-outline" size={20} color="#df5ca8" />
+            <View style={[styles.leftIconBox, { backgroundColor: theme.softPrimary }]}>
+              <Ionicons name="flag-outline" size={20} color={theme.primary} />
             </View>
-            <Text style={styles.cardTitle}>Priority Level</Text>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Priority Level</Text>
           </View>
           <View style={styles.chipGrid}>
             <Chip
               label="High"
               selected={priority === 'High'}
               onPress={() => setPriority('High')}
-              activeColor="#d94848"
-              icon={<View style={[styles.dot, { backgroundColor: '#ef4444' }]} />}
+              activeColor={theme.error}
+              icon={<View style={[styles.dot, { backgroundColor: theme.error }]} />}
             />
             <Chip
               label="Medium"
               selected={priority === 'Medium'}
               onPress={() => setPriority('Medium')}
-              activeColor="#d18b00"
-              icon={<View style={[styles.dot, { backgroundColor: '#f59e0b' }]} />}
+              activeColor={theme.warning}
+              icon={<View style={[styles.dot, { backgroundColor: theme.warning }]} />}
             />
             <Chip
               label="Low"
               selected={priority === 'Low'}
               onPress={() => setPriority('Low')}
-              activeColor="#23944b"
-              icon={<View style={[styles.dot, { backgroundColor: '#22c55e' }]} />}
+              activeColor={theme.success}
+              icon={<View style={[styles.dot, { backgroundColor: theme.success }]} />}
             />
           </View>
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.leftIconBox}>
-              <Ionicons name="bookmark-outline" size={20} color="#df5ca8" />
+            <View style={[styles.leftIconBox, { backgroundColor: theme.softPrimary }]}>
+              <Ionicons name="bookmark-outline" size={20} color={theme.primary} />
             </View>
-            <Text style={styles.cardTitle}>Status</Text>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Status</Text>
           </View>
           <View style={styles.chipGrid}>
             <Chip
               label="To Do"
               selected={status === 'To Do'}
               onPress={() => setStatus('To Do')}
-              activeColor="#df5ca8"
-              icon={<Ionicons name="pin-outline" size={18} color={status === 'To Do' ? '#df5ca8' : '#666'} />}
+              activeColor={theme.primary}
+              icon={<Ionicons name="pin-outline" size={18} color={status === 'To Do' ? theme.primary : theme.subText} />}
             />
             <Chip
               label="In Progress"
               selected={status === 'In Progress'}
               onPress={() => setStatus('In Progress')}
-              activeColor="#d18b00"
-              icon={<Ionicons name="hourglass-outline" size={18} color={status === 'In Progress' ? '#d18b00' : '#666'} />}
+              activeColor={theme.warning}
+              icon={<Ionicons name="hourglass-outline" size={18} color={status === 'In Progress' ? theme.warning : theme.subText} />}
             />
             <Chip
               label="Completed"
               selected={status === 'Completed'}
               onPress={() => setStatus('Completed')}
-              activeColor="#2e9d4d"
-              icon={<Ionicons name="checkmark-circle-outline" size={18} color={status === 'Completed' ? '#2e9d4d' : '#666'} />}
+              activeColor={theme.success}
+              icon={<Ionicons name="checkmark-circle-outline" size={18} color={status === 'Completed' ? theme.success : theme.subText} />}
             />
           </View>
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.leftIconBox}>
-              <Ionicons name="document-text-outline" size={20} color="#df5ca8" />
+            <View style={[styles.leftIconBox, { backgroundColor: theme.softPrimary }]}>
+              <Ionicons name="document-text-outline" size={20} color={theme.primary} />
             </View>
-            <Text style={styles.cardTitle}>Note (Optional)</Text>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Note (Optional)</Text>
           </View>
           <TextInput
-            style={styles.noteInput}
+            style={[styles.noteInput, { backgroundColor: theme.inputBg, borderColor: theme.border, color: theme.text }]}
             value={note}
             onChangeText={setNote}
             multiline
             placeholder="Write a short note..."
-            placeholderTextColor="#7A6D80"
+            placeholderTextColor={theme.subText}
             textAlignVertical="top"
           />
-          <Text style={styles.countText}>{note.length}/250</Text>
+          <Text style={[styles.countText, { color: theme.subText }]}>{note.length}/250</Text>
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
           <View style={styles.cardHeader}>
-            <View style={styles.leftIconBox}>
-              <Ionicons name="notifications-outline" size={20} color="#df5ca8" />
+            <View style={[styles.leftIconBox, { backgroundColor: theme.softPrimary }]}>
+              <Ionicons name="notifications-outline" size={20} color={theme.primary} />
             </View>
-            <Text style={styles.cardTitle}>Reminder</Text>
+            <Text style={[styles.cardTitle, { color: theme.text }]}>Reminder</Text>
           </View>
           <View style={styles.reminderRow}>
-            <Text style={styles.reminderText}>Add a reminder for this task</Text>
+            <Text style={[styles.reminderText, { color: theme.subText }]}>Add a reminder for this task</Text>
             <Switch
               value={reminder}
               onValueChange={setReminder}
-              trackColor={{ false: '#ddd', true: '#f4a8cc' }}
+              trackColor={{ false: theme.switchTrackOff, true: theme.switchTrackOn }}
               thumbColor="#fff"
             />
           </View>
         </View>
 
-        <TouchableOpacity style={styles.addBtn} activeOpacity={0.9} onPress={handleSave}>
+        <TouchableOpacity style={[styles.addBtn, { backgroundColor: theme.primary }]} activeOpacity={0.9} onPress={handleSave}>
           <Ionicons name="add" size={24} color="#fff" />
           <Text style={styles.addBtnText}>Add Task</Text>
         </TouchableOpacity>

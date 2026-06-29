@@ -7,9 +7,11 @@ import {
 import { Drawer } from 'expo-router/drawer';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../../../constants/src/context/AuthContext';
+import { useTheme } from '../../../constants/src/context/ThemeContext';
 
 function CustomDrawerContent(props: any) {
   const { user } = useAuth();
+  const { theme } = useTheme();
   const userName = user?.name || 'User';
   const profileImage = user?.profile_pic || '';
 
@@ -22,14 +24,39 @@ function CustomDrawerContent(props: any) {
 
   return (
     <View style={styles.drawerOuter}>
-      <View style={styles.drawerRoot}>
-        <View style={styles.drawerHeader}>
+      <View
+        style={[
+          styles.drawerRoot,
+          {
+            backgroundColor: theme.cardBg,
+          },
+        ]}
+      >
+        <View
+          style={[
+            styles.drawerHeader,
+            {
+              backgroundColor: theme.primary,
+            },
+          ]}
+        >
           <TouchableOpacity
-            style={styles.closeButton}
+            style={[
+              styles.closeButton,
+              {
+                backgroundColor: theme.isDark
+                  ? 'rgba(255,255,255,0.12)'
+                  : 'rgba(255,255,255,0.20)',
+              },
+            ]}
             activeOpacity={0.8}
             onPress={() => props.navigation.closeDrawer()}
           >
-            <Ionicons name="close-outline" size={24} color="#fff" />
+            <Ionicons
+              name="close-outline"
+              size={24}
+              color="#fff"
+            />
           </TouchableOpacity>
 
           <View style={styles.profileRow}>
@@ -42,8 +69,15 @@ function CustomDrawerContent(props: any) {
             )}
 
             <View style={{ flex: 1 }}>
-              <Text style={styles.profileName}>{userName}</Text>
-              <Text style={styles.profileSubText}>Let's plan your day smartly</Text>
+              <Text
+                style={[
+                  styles.profileName,
+                  {
+                    color: '#fff',
+                  },
+                ]}
+              >{userName}</Text>
+              <Text style={styles.profileSubText}>{"Let's plan your day smartly"}</Text>
             </View>
           </View>
         </View>
@@ -61,9 +95,14 @@ function CustomDrawerContent(props: any) {
             icon={({ color, size }) => (
               <Ionicons name="flash-outline" size={size} color={color} />
             )}
-            labelStyle={styles.extraItemLabel}
+            labelStyle={[
+              styles.extraItemLabel,
+              {
+                color: theme.text,
+              },
+            ]}
             style={styles.extraItem}
-            inactiveTintColor="#111"
+            inactiveTintColor={theme.text}
           />
 
           <DrawerItem
@@ -72,9 +111,14 @@ function CustomDrawerContent(props: any) {
             icon={({ color, size }) => (
               <Ionicons name="settings-outline" size={size} color={color} />
             )}
-            labelStyle={styles.extraItemLabel}
+            labelStyle={[
+              styles.extraItemLabel,
+              {
+                color: theme.text,
+              },
+            ]}
             style={styles.extraItem}
-            inactiveTintColor="#111"
+            inactiveTintColor={theme.text}
           />
         </DrawerContentScrollView>
       </View>
@@ -83,6 +127,7 @@ function CustomDrawerContent(props: any) {
 }
 
 export default function HomeLayout() {
+  const { theme } = useTheme();
   return (
     <Drawer
       detachInactiveScreens={false}
@@ -90,7 +135,9 @@ export default function HomeLayout() {
       screenOptions={{
         headerShown: false,
         drawerType: 'front',
-        overlayColor: 'rgba(0,0,0,0.14)',
+        overlayColor: theme.isDark
+          ? 'rgba(0,0,0,0.45)'
+          : 'rgba(0,0,0,0.14)',
         sceneStyle: {
           backgroundColor: 'transparent',
         },
@@ -101,8 +148,9 @@ export default function HomeLayout() {
           elevation: 0,
           shadowOpacity: 0,
         },
-        drawerActiveTintColor: '#ab69d8',
-        drawerInactiveTintColor: '#111',
+        drawerActiveTintColor: theme.activeText,
+        drawerInactiveTintColor: theme.text,
+        drawerActiveBackgroundColor: theme.activeBg,
         drawerLabelStyle: {
           marginLeft: -10,
           fontSize: 17,
@@ -171,13 +219,11 @@ const styles = StyleSheet.create({
   drawerRoot: {
     flex: 1,
     marginTop: 0,
-    backgroundColor: '#fff',
     borderTopRightRadius: 34,
     borderBottomRightRadius: 34,
     overflow: 'hidden',
   },
   drawerHeader: {
-    backgroundColor: '#c68be9',
     paddingTop: 22,
     paddingHorizontal: 20,
     paddingBottom: 22,
@@ -189,7 +235,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
@@ -228,7 +273,7 @@ const styles = StyleSheet.create({
   },
   profileSubText: {
     fontSize: 13,
-    color: '#f8eefe',
+    color: 'rgba(255,255,255,0.85)'
   },
   drawerScrollContent: {
     paddingTop: 14,
@@ -244,6 +289,5 @@ const styles = StyleSheet.create({
     marginLeft: -10,
     fontSize: 17,
     fontWeight: '600',
-    color: '#111',
   },
 });

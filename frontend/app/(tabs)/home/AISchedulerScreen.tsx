@@ -16,8 +16,7 @@ import {
 
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../../constants/src/context/AuthContext';
-import TopCurve from '../../../constants/src/components/TopCurve';
-import { commonStyles } from '../../../constants/src/theme/commonStyles';
+import { useTheme } from '../../../constants/src/context/ThemeContext';
 import { dashboardApi, TodayPlanItem } from '../../../services/api';
 import { aiApi } from '../../../services/api';
 
@@ -133,11 +132,33 @@ function addMinutes(date: Date, mins: number) {
   return new Date(date.getTime() + mins * 60_000);
 }
 
-function getPriorityColor(p: string | null) {
-  return p === 'high' ? '#E91E63' : p === 'medium' ? '#FF9800' : p === 'low' ? '#4CAF50' : '#9E9E9E';
+function getPriorityColor(p: string | null, theme: any) {
+  return p === 'high'
+    ? theme.error
+    : p === 'medium'
+      ? theme.warning
+      : p === 'low'
+        ? theme.success
+        : theme.subText;
 }
-function getPriorityBg(p: string | null) {
-  return p === 'high' ? '#FDE8EF' : p === 'medium' ? '#FFF3E0' : p === 'low' ? '#E8F5E9' : '#F5F5F5';
+function getPriorityBg(p: string | null, theme: any) {
+  if (theme.isDark) {
+    return p === 'high'
+      ? 'rgba(248,113,113,0.16)'
+      : p === 'medium'
+        ? 'rgba(251,191,36,0.16)'
+        : p === 'low'
+          ? 'rgba(34,197,94,0.16)'
+          : theme.inputBg;
+  }
+
+  return p === 'high'
+    ? '#FEF2F2'
+    : p === 'medium'
+      ? '#FFFBEB'
+      : p === 'low'
+        ? '#ECFDF5'
+        : theme.inputBg;
 }
 
 // ─── Reschedule Modal ─────────────────────────────────────────────────────────
@@ -152,6 +173,7 @@ function RescheduleModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { theme } = useTheme();
   if (!pending) return null;
   const { item, newStart, newEnd, analysis } = pending;
   const newTimeLabel = `${newStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })} – ${newEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`;
@@ -159,18 +181,18 @@ function RescheduleModal({
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={mStyles.overlay}>
-        <View style={mStyles.sheet}>
+        <View style={[mStyles.sheet, { backgroundColor: theme.cardBg }]}>
           {/* Header */}
           <View style={mStyles.header}>
-            <View style={mStyles.dragHandle} />
-            <Text style={mStyles.title}>Reschedule Task</Text>
-            <Text style={mStyles.taskName} numberOfLines={2}>
-              "{item.task.title}"
+            <View style={[mStyles.dragHandle, { backgroundColor: theme.border }]} />
+            <Text style={[mStyles.title, { color: theme.text }]}>Reschedule Task</Text>
+            <Text style={[mStyles.taskName, { color: theme.subText }]} numberOfLines={2}>
+              {`"${item.task.title}"`}
             </Text>
             <View style={mStyles.timeRow}>
-              <View style={mStyles.timePill}>
-                <Ionicons name="time-outline" size={14} color="#a855f7" />
-                <Text style={mStyles.timePillText}>{newTimeLabel}</Text>
+              <View style={[mStyles.timePill, { backgroundColor: theme.softPrimary }]}>
+                <Ionicons name="time-outline" size={14} color={theme.primary} />
+                <Text style={[mStyles.timePillText, { color: theme.primary }]}>{newTimeLabel}</Text>
               </View>
             </View>
           </View>
@@ -179,13 +201,13 @@ function RescheduleModal({
           {analysis.advantages.length > 0 && (
             <View style={mStyles.section}>
               <View style={mStyles.sectionHeader}>
-                <View style={[mStyles.dot, { backgroundColor: '#22c55e' }]} />
-                <Text style={[mStyles.sectionTitle, { color: '#15803d' }]}>Advantages</Text>
+                <View style={[mStyles.dot, { backgroundColor: theme.success }]} />
+                <Text style={[mStyles.sectionTitle, { color: theme.success }]}>Advantages</Text>
               </View>
               {analysis.advantages.map((a, i) => (
                 <View key={i} style={mStyles.bulletRow}>
-                  <Text style={mStyles.bullet}>✓</Text>
-                  <Text style={[mStyles.bulletText, { color: '#166534' }]}>{a}</Text>
+                  <Text style={[mStyles.bullet, { color: theme.success }]}>✓</Text>
+                  <Text style={[mStyles.bulletText, { color: theme.text }]}>{a}</Text>
                 </View>
               ))}
             </View>
@@ -195,38 +217,51 @@ function RescheduleModal({
           {analysis.disadvantages.length > 0 && (
             <View style={mStyles.section}>
               <View style={mStyles.sectionHeader}>
-                <View style={[mStyles.dot, { backgroundColor: '#ef4444' }]} />
-                <Text style={[mStyles.sectionTitle, { color: '#b91c1c' }]}>Disadvantages</Text>
+                <View style={[mStyles.dot, { backgroundColor: theme.error }]} />
+                <Text style={[mStyles.sectionTitle, { color: theme.error }]}>Disadvantages</Text>
               </View>
               {analysis.disadvantages.map((d, i) => (
                 <View key={i} style={mStyles.bulletRow}>
-                  <Text style={mStyles.bullet}>✕</Text>
-                  <Text style={[mStyles.bulletText, { color: '#991b1b' }]}>{d}</Text>
+                  <Text style={[mStyles.bullet, { color: theme.error }]}>✕</Text>
+                  <Text style={[mStyles.bulletText, { color: theme.text }]}>{d}</Text>
                 </View>
               ))}
             </View>
           )}
 
           {/* AI Summary */}
-          <View style={[mStyles.summaryCard, analysis.recommendation === 'change' ? mStyles.summaryGreen : mStyles.summaryRed]}>
+          <View
+            style={[
+              mStyles.summaryCard,
+              {
+                backgroundColor:
+                  analysis.recommendation === 'change'
+                    ? (theme.isDark ? 'rgba(34,197,94,0.16)' : '#F0FDF4')
+                    : (theme.isDark ? 'rgba(248,113,113,0.16)' : '#FEF2F2'),
+              },
+            ]}
+          >
             <Ionicons
               name="sparkles"
               size={16}
-              color={analysis.recommendation === 'change' ? '#15803d' : '#b91c1c'}
+              color={analysis.recommendation === 'change' ? theme.success : theme.error}
             />
-            <Text style={[mStyles.summaryText, { color: analysis.recommendation === 'change' ? '#15803d' : '#b91c1c' }]}>
+            <Text style={[mStyles.summaryText, { color: analysis.recommendation === 'change' ? theme.success : theme.error }]}>
               {analysis.summary}
             </Text>
           </View>
 
           {/* Buttons */}
           <View style={mStyles.btnRow}>
-            <TouchableOpacity style={mStyles.cancelBtn} onPress={onCancel} activeOpacity={0.85}>
-              <Ionicons name="arrow-undo-outline" size={18} color="#555" />
-              <Text style={mStyles.cancelBtnText}>Keep Original</Text>
+            <TouchableOpacity style={[mStyles.cancelBtn, { borderColor: theme.border }]} onPress={onCancel} activeOpacity={0.85}>
+              <Ionicons name="arrow-undo-outline" size={18} color={theme.text} />
+              <Text style={[mStyles.cancelBtnText, { color: theme.text }]}>Keep Original</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[mStyles.confirmBtn, analysis.recommendation === 'keep' && mStyles.confirmBtnWarn]}
+              style={[
+                mStyles.confirmBtn,
+                { backgroundColor: analysis.recommendation === 'keep' ? theme.error : theme.primary },
+              ]}
               onPress={onConfirm}
               activeOpacity={0.85}
             >
@@ -256,6 +291,7 @@ function DraggableCard({
   priorityColor: string;
   priorityBg: string;
 }) {
+  const { theme } = useTheme();
   const pan = useRef(new Animated.Value(0)).current;
   const [dragging, setDragging] = useState(false);
   const accumulatedDy = useRef(0);
@@ -312,18 +348,18 @@ function DraggableCard({
       <View
         style={[
           styles.taskCard,
-          { borderLeftColor: priorityColor },
-          dragging && styles.taskCardDragging,
+          { backgroundColor: theme.cardBg, borderLeftColor: priorityColor },
+          dragging && [styles.taskCardDragging, { backgroundColor: theme.inputBg }],
         ]}
       >
         {/* Drag hint */}
         <View style={styles.dragHintRow}>
-          <Ionicons name="reorder-three-outline" size={20} color="#ccc" />
-          <Text style={styles.dragHint}>hold & drag to reschedule</Text>
+          <Ionicons name="reorder-three-outline" size={20} color={theme.subText} />
+          <Text style={[styles.dragHint, { color: theme.subText }]}>hold & drag to reschedule</Text>
         </View>
 
         <View style={styles.taskCardHeader}>
-          <Text style={styles.taskTitle} numberOfLines={2}>
+          <Text style={[styles.taskTitle, { color: theme.text }]} numberOfLines={2}>
             {item.task.title}
           </Text>
           <View style={[styles.priorityBadge, { backgroundColor: priorityBg }]}>
@@ -334,8 +370,8 @@ function DraggableCard({
         </View>
 
         <View style={styles.taskMeta}>
-          <Ionicons name="time-outline" size={14} color="#888" />
-          <Text style={styles.taskMetaText}>
+          <Ionicons name="time-outline" size={14} color={theme.subText} />
+          <Text style={[styles.taskMetaText, { color: theme.subText }]}>
             {item.start_time && item.end_time
               ? `${formatTime(item.start_time)} – ${formatTime(item.end_time)}`
               : 'Time TBD'}
@@ -344,15 +380,15 @@ function DraggableCard({
 
         {item.confidence_score > 0 && (
           <View style={styles.confidenceRow}>
-            <View style={styles.confidenceBarBg}>
+            <View style={[styles.confidenceBarBg, { backgroundColor: theme.inputBg }]}>
               <View
                 style={[
                   styles.confidenceBarFill,
-                  { width: `${Math.round(item.confidence_score * 100)}%` as any },
+                  { width: `${Math.round(item.confidence_score * 100)}%` as any, backgroundColor: theme.primary },
                 ]}
               />
             </View>
-            <Text style={styles.confidenceText}>
+            <Text style={[styles.confidenceText, { color: theme.primary }]}>
               {Math.round(item.confidence_score * 100)}% match
             </Text>
           </View>
@@ -366,6 +402,7 @@ function DraggableCard({
 export default function AISchedulerScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { theme } = useTheme();
 
   const [planItems, setPlanItems] = useState<TodayPlanItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -504,8 +541,8 @@ export default function AISchedulerScreen() {
   const userName = user?.name?.split(' ')[0] || 'User';
 
   return (
-    <View style={commonStyles.screen}>
-      <TopCurve />
+    <View style={[styles.screen, { backgroundColor: theme.bg }]}>
+      <View style={[styles.topBg, { backgroundColor: theme.topSurface }]} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -515,47 +552,51 @@ export default function AISchedulerScreen() {
         {/* HEADER */}
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.hello}>Hi, {userName} 👋</Text>
-            <Text style={styles.subText}>Let's plan your day smartly</Text>
+            <Text style={[styles.hello, { color: theme.text }]}>Hi, {userName} 👋</Text>
+            <Text style={[styles.subText, { color: theme.subText }]}>{"Let's plan your day smartly"}</Text>
           </View>
-          <View style={styles.avatar}>
+          <View style={[styles.avatar, { backgroundColor: theme.softPrimary, borderColor: theme.border }]}>
             {user?.profile_pic ? (
               <Image
                 source={{ uri: user.profile_pic }}
                 style={styles.avatarImage}
               />
             ) : (
-              <Text style={styles.avatarText}>{userName.charAt(0).toUpperCase()}</Text>
+              <Text style={[styles.avatarText, { color: theme.primary }]}>{userName.charAt(0).toUpperCase()}</Text>
             )}
           </View>
         </View>
 
         {/* AI CARD */}
-        <View style={styles.mainCard}>
+        <View style={[styles.mainCard, { backgroundColor: theme.primary }]}>
           <View style={styles.mainCardHeader}>
-            <Ionicons name="sparkles" size={24} color="#a855f7" />
-            <Text style={styles.cardTitle}>AI Scheduler</Text>
+            <Ionicons name="sparkles" size={24} color="#fff" />
+            <Text style={[styles.cardTitle, { color: '#fff' }]}>AI Scheduler</Text>
           </View>
-          <Text style={styles.cardText}>
+          <Text style={[styles.cardText, { color: 'rgba(255,255,255,0.86)' }]}>
             {hasPlan
               ? 'Your schedule is ready! Drag any task up/down to reschedule it.'
               : 'Generate your AI-powered schedule based on your tasks, priorities, and deadlines.'}
           </Text>
           <TouchableOpacity
-            style={[styles.primaryButton, generating && styles.primaryButtonDisabled]}
+            style={[
+              styles.primaryButton,
+              { backgroundColor: theme.cardBg },
+              generating && { opacity: 0.72 },
+            ]}
             onPress={generateAIPlan}
             disabled={generating}
             activeOpacity={0.85}
           >
             {generating ? (
               <View style={styles.buttonRow}>
-                <ActivityIndicator size="small" color="#fff" />
-                <Text style={styles.primaryButtonText}>  Generating...</Text>
+                <ActivityIndicator size="small" color={theme.primary} />
+                <Text style={[styles.primaryButtonText, { color: theme.primary }]}>  Generating...</Text>
               </View>
             ) : (
               <View style={styles.buttonRow}>
-                <Ionicons name="sparkles-outline" size={18} color="#fff" />
-                <Text style={styles.primaryButtonText}>
+                <Ionicons name="sparkles-outline" size={18} color={theme.primary} />
+                <Text style={[styles.primaryButtonText, { color: theme.primary }]}>
                   {hasPlan ? '  Regenerate Plan' : '  Generate AI Plan'}
                 </Text>
               </View>
@@ -566,16 +607,16 @@ export default function AISchedulerScreen() {
         {/* LOADING */}
         {loading && (
           <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color="#a855f7" />
-            <Text style={styles.loadingText}>Loading your schedule...</Text>
+            <ActivityIndicator size="large" color={theme.primary} />
+            <Text style={[styles.loadingText, { color: theme.subText }]}>Loading your schedule...</Text>
           </View>
         )}
 
         {/* DRAG HINT BANNER */}
         {!loading && hasPlan && planItems.length > 0 && (
-          <View style={styles.hintBanner}>
-            <Ionicons name="hand-left-outline" size={18} color="#7c3aed" />
-            <Text style={styles.hintText}>
+          <View style={[styles.hintBanner, { backgroundColor: theme.softPrimary }]}>
+            <Ionicons name="hand-left-outline" size={18} color={theme.primary} />
+            <Text style={[styles.hintText, { color: theme.primary }]}>
               Hold & drag a card up/down to reschedule. AI will show impact before confirming.
             </Text>
           </View>
@@ -585,24 +626,24 @@ export default function AISchedulerScreen() {
         {!loading && hasPlan && planItems.length > 0 && (
           <>
             <View style={styles.sectionRow}>
-              <Text style={styles.sectionTitle}>Today's Schedule</Text>
-              <Text style={styles.taskCount}>{planItems.length} tasks</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>{"Today's Schedule"}</Text>
+              <Text style={[styles.taskCount, { color: theme.primary, backgroundColor: theme.softPrimary }]}>{planItems.length} tasks</Text>
             </View>
 
             <View style={styles.timeline}>
               {planItems.map((item, index) => {
                 const isLast = index === planItems.length - 1;
-                const pColor = getPriorityColor(item.task.importance_hint);
-                const pBg = getPriorityBg(item.task.importance_hint);
+                const pColor = getPriorityColor(item.task.importance_hint, theme);
+                const pBg = getPriorityBg(item.task.importance_hint, theme);
 
                 return (
                   <View key={item.plan_item_id} style={styles.timelineItem}>
                     {/* Time column */}
                     <View style={styles.timeColumn}>
-                      <Text style={styles.timeStart}>
+                      <Text style={[styles.timeStart, { color: theme.text }]}>
                         {item.start_time ? formatTime(item.start_time) : '--:--'}
                       </Text>
-                      <Text style={styles.timeEnd}>
+                      <Text style={[styles.timeEnd, { color: theme.subText }]}>
                         {item.end_time ? formatTime(item.end_time) : ''}
                       </Text>
                     </View>
@@ -610,7 +651,7 @@ export default function AISchedulerScreen() {
                     {/* Dot + Line */}
                     <View style={styles.dotLineColumn}>
                       <View style={[styles.dot, { backgroundColor: pColor }]} />
-                      {!isLast && <View style={styles.line} />}
+                      {!isLast && <View style={[styles.line, { backgroundColor: theme.border }]} />}
                     </View>
 
                     {/* Draggable card */}
@@ -632,38 +673,38 @@ export default function AISchedulerScreen() {
 
         {/* EMPTY STATE */}
         {!loading && !hasPlan && (
-          <View style={styles.emptyCard}>
-            <Ionicons name="calendar-outline" size={48} color="#d1d5db" />
-            <Text style={styles.emptyTitle}>No Schedule Yet</Text>
-            <Text style={styles.emptyText}>
-              Add some tasks and tap "Generate AI Plan" to create your personalized daily schedule.
+          <View style={[styles.emptyCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+            <Ionicons name="calendar-outline" size={48} color={theme.subText} />
+            <Text style={[styles.emptyTitle, { color: theme.text }]}>No Schedule Yet</Text>
+            <Text style={[styles.emptyText, { color: theme.subText }]}>
+              {"Add some tasks and tap \"Generate AI Plan\" to create your personalized daily schedule."}
             </Text>
           </View>
         )}
 
         {/* QUICK ACTIONS */}
-        <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Quick Actions</Text>
+        <Text style={[styles.sectionTitle, { marginTop: 8, color: theme.text }]}>Quick Actions</Text>
         <View style={styles.grid}>
-          <TouchableOpacity style={styles.gridCard} activeOpacity={0.8} onPress={() => router.push('/(tabs)/home/add-task')}>
-            <View style={styles.iconWrap}>
-              <Ionicons name="add-circle-outline" size={26} color="#d14df0" />
+          <TouchableOpacity style={[styles.gridCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]} activeOpacity={0.8} onPress={() => router.push('/(tabs)/home/add-task')}>
+            <View style={[styles.iconWrap, { backgroundColor: theme.softPrimary }]}>
+              <Ionicons name="add-circle-outline" size={26} color={theme.primary} />
             </View>
-            <Text style={styles.gridText}>Add Task</Text>
+            <Text style={[styles.gridText, { color: theme.text }]}>Add Task</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.gridCard} activeOpacity={0.8} onPress={() => router.push('/(tabs)/tasks')}>
-            <View style={styles.iconWrap}>
-              <Ionicons name="list-outline" size={26} color="#d14df0" />
+          <TouchableOpacity style={[styles.gridCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]} activeOpacity={0.8} onPress={() => router.push('/(tabs)/tasks')}>
+            <View style={[styles.iconWrap, { backgroundColor: theme.softPrimary }]}>
+              <Ionicons name="list-outline" size={26} color={theme.primary} />
             </View>
-            <Text style={styles.gridText}>Tasks</Text>
+            <Text style={[styles.gridText, { color: theme.text }]}>Tasks</Text>
           </TouchableOpacity>
         </View>
 
         {/* TIP */}
-        <View style={styles.tipCard}>
-          <Ionicons name="bulb-outline" size={20} color="#f59e0b" />
+        <View style={[styles.tipCard, { backgroundColor: theme.cardBg, borderColor: theme.border }]}>
+          <Ionicons name="bulb-outline" size={20} color={theme.warning} />
           <View style={styles.tipContent}>
-            <Text style={styles.tipTitle}>Productivity Tip</Text>
-            <Text style={styles.tipText}>
+            <Text style={[styles.tipTitle, { color: theme.text }]}>Productivity Tip</Text>
+            <Text style={[styles.tipText, { color: theme.subText }]}>
               High priority tasks and closer deadlines are scheduled first. Drag to adjust — AI will advise before confirming.
             </Text>
           </View>
@@ -764,6 +805,18 @@ const mStyles = StyleSheet.create({
 
 // ─── Screen Styles ────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+  topBg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 185,
+    borderBottomLeftRadius: 26,
+    borderBottomRightRadius: 26,
+  },
   scrollContent: { paddingHorizontal: 24, paddingTop: 95, paddingBottom: 120 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 },
   hello: { fontSize: 28, fontWeight: '800', color: '#111', marginBottom: 4 },

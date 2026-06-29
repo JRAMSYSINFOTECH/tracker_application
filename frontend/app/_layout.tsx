@@ -3,12 +3,13 @@ import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { AuthProvider, useAuth } from '../constants/src/context/AuthContext';
 import { TaskProvider } from '../constants/src/context/TaskContext';
-import { ThemeProvider } from '../constants/src/context/ThemeContext';
+import { ThemeProvider, useTheme } from '../constants/src/context/ThemeContext';
 import { useEffect } from 'react';
 import { registerForPushNotificationsAsync } from '../services/notificationService';
 
 function RootNavigator() {
   const { loading, isAuthenticated } = useAuth();
+  const { theme } = useTheme();
   const router = useRouter();
 
   useEffect(() => {
@@ -21,7 +22,7 @@ function RootNavigator() {
   if (loading) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color="#d14df0" />
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -37,6 +38,11 @@ function RootNavigator() {
   );
 }
 
+function ThemedStatusBar() {
+  const { isDarkMode } = useTheme();
+  return <StatusBar style={isDarkMode ? 'light' : 'dark'} />;
+}
+
 export default function RootLayout() {
 
   useEffect(() => {
@@ -48,7 +54,7 @@ export default function RootLayout() {
       <AuthProvider>
         <TaskProvider>
           <RootNavigator />
-          <StatusBar hidden />
+          <ThemedStatusBar />
         </TaskProvider>
       </AuthProvider>
     </ThemeProvider>
