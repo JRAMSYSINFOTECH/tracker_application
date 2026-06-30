@@ -27,11 +27,22 @@ function CustomDrawerContent(props: any) {
       <View style={[styles.drawerRoot, { backgroundColor: theme.drawerBg }]}>
         <View style={[styles.drawerHeader, { backgroundColor: theme.drawerHeaderBg }]}>
           <TouchableOpacity
-            style={styles.closeButton}
+            style={[
+              styles.closeButton,
+              {
+                backgroundColor: theme.isDark
+                  ? 'rgba(255,255,255,0.12)'
+                  : 'rgba(255,255,255,0.20)',
+              },
+            ]}
             activeOpacity={0.8}
             onPress={() => props.navigation.closeDrawer()}
           >
-            <Ionicons name="close-outline" size={24} color="#fff" />
+            <Ionicons
+              name="close-outline"
+              size={24}
+              color="#fff"
+            />
           </TouchableOpacity>
 
           <View style={styles.profileRow}>
@@ -44,8 +55,15 @@ function CustomDrawerContent(props: any) {
             )}
 
             <View style={{ flex: 1 }}>
-              <Text style={styles.profileName}>{userName}</Text>
-              <Text style={styles.profileSubText}>Let's plan your day smartly</Text>
+              <Text
+                style={[
+                  styles.profileName,
+                  {
+                    color: '#fff',
+                  },
+                ]}
+              >{userName}</Text>
+              <Text style={styles.profileSubText}>{"Let's plan your day smartly"}</Text>
             </View>
           </View>
         </View>
@@ -94,7 +112,9 @@ export default function HomeLayout() {
       screenOptions={{
         headerShown: false,
         drawerType: 'front',
-        overlayColor: 'rgba(0,0,0,0.14)',
+        overlayColor: theme.isDark
+          ? 'rgba(0,0,0,0.45)'
+          : 'rgba(0,0,0,0.14)',
         sceneStyle: {
           backgroundColor: 'transparent',
         },
@@ -191,7 +211,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,

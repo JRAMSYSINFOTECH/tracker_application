@@ -127,7 +127,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* LOGOUT BUTTON */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <TouchableOpacity style={[styles.logoutButton, { backgroundColor: theme.error }]} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={22} color="#fff" />
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>

@@ -38,6 +38,11 @@ function RootNavigator() {
   );
 }
 
+function ThemedStatusBar() {
+  const { isDarkMode } = useTheme();
+  return <StatusBar style={isDarkMode ? 'light' : 'dark'} />;
+}
+
 export default function RootLayout() {
 
   useEffect(() => {
@@ -49,7 +54,7 @@ export default function RootLayout() {
       <AuthProvider>
         <TaskProvider>
           <RootNavigator />
-          <StatusBar hidden />
+          <ThemedStatusBar />
         </TaskProvider>
       </AuthProvider>
     </ThemeProvider>

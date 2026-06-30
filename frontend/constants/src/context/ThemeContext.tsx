@@ -1,11 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-type ThemeContextType = {
-  isDarkMode: boolean;
-  toggleDarkMode: () => void;
-  theme: typeof lightTheme;
-};
 
 export const lightTheme = {
   isDark: false,
@@ -23,6 +18,9 @@ export const lightTheme = {
   switchTrackOn: '#6366f1',
   primary: '#6366f1',
   accent: '#3b82f6',
+  success: '#22C55E',
+  warning: '#F59E0B',
+  error: '#EF4444',
   primaryLight: '#eef2ff',
   drawerHeaderBg: '#6366f1',
   statCardTotal: '#1a1a2e',
@@ -258,6 +256,9 @@ export const darkTheme = {
   switchTrackOn: '#818cf8',
   primary: '#818cf8',
   accent: '#60a5fa',
+  success: '#22C55E',
+  warning: '#FBBF24',
+  error: '#F87171',
   primaryLight: '#1e1b4b',
   accentLight: '#1e3a5f',
   drawerHeaderBg: '#4338ca',
@@ -478,30 +479,58 @@ export const darkTheme = {
   aiConfidenceText: '#a5b4fc',
 };
 
+type ThemeContextType = {
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
+  theme: typeof lightTheme;
+};
+
 const DARK_MODE_KEY = 'dark_mode_enabled';
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
-    // Load saved preference
-    AsyncStorage.getItem(DARK_MODE_KEY).then((val) => {
-      if (val === 'true') setIsDarkMode(true);
-    });
+    const loadTheme = async () => {
+      try {
+        const value = await AsyncStorage.getItem(DARK_MODE_KEY);
+        if (value === 'true') {
+          setIsDarkMode(true);
+        }
+      } catch (error) {
+        console.error('Failed to load theme:', error);
+      }
+    };
+
+    loadTheme();
   }, []);
 
   const toggleDarkMode = async () => {
-    const newVal = !isDarkMode;
-    setIsDarkMode(newVal);
-    await AsyncStorage.setItem(DARK_MODE_KEY, String(newVal));
+    try {
+      const newValue = !isDarkMode;
+      setIsDarkMode(newValue);
+      await AsyncStorage.setItem(DARK_MODE_KEY, String(newValue));
+    } catch (error) {
+      console.error('Failed to save theme:', error);
+    }
   };
 
   const theme = isDarkMode ? darkTheme : lightTheme;
 
   return (
-    <ThemeContext.Provider value={{ isDarkMode, toggleDarkMode, theme }}>
+    <ThemeContext.Provider
+      value={{
+        isDarkMode,
+        toggleDarkMode,
+        theme,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
@@ -509,8 +538,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme() {
   const context = useContext(ThemeContext);
+
   if (!context) {
-    throw new Error('useTheme must be used inside ThemeProvider');
+    throw new Error('useTheme must be used within ThemeProvider');
   }
+
   return context;
 }

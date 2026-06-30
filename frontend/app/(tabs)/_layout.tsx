@@ -10,7 +10,7 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: theme.primary,
-        tabBarInactiveTintColor: '#8f8f8f',
+        tabBarInactiveTintColor: theme.subText,
         tabBarStyle: {
           position: 'absolute',
           left: 0,
@@ -26,7 +26,7 @@ export default function TabsLayout() {
           paddingBottom: 8,
           elevation: 20,
           zIndex: 20,
-          shadowColor: '#000',
+          shadowColor: theme.isDark ? '#000' : '#999',
           shadowOpacity: 0.08,
           shadowRadius: 10,
           shadowOffset: { width: 0, height: -2 },
@@ -37,6 +37,8 @@ export default function TabsLayout() {
         },
         tabBarItemStyle: {
           paddingVertical: 2,
+          borderRadius: 14,
+          marginHorizontal: 8,
         },
       }}
     >
