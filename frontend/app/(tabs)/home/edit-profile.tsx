@@ -5,6 +5,8 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -98,7 +100,10 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <View style={[styles.screen, { backgroundColor: theme.editProfileBg }]}>
+    <KeyboardAvoidingView
+      style={[styles.screen, { backgroundColor: theme.editProfileBg }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <View style={[styles.header, { backgroundColor: theme.editProfileHeaderBg, borderBottomColor: theme.editProfileHeaderBorder }]}>
         <TouchableOpacity 
           style={[styles.backButton, { backgroundColor: theme.editProfileBackBg }]} 
@@ -217,7 +222,7 @@ export default function EditProfileScreen() {
           ]}
         />
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

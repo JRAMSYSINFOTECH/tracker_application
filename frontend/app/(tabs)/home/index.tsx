@@ -128,7 +128,7 @@ export default function DashboardScreen() {
     return formattedTasks.filter((task) => task.status === selectedFilter);
   }, [selectedFilter, formattedTasks]);
 
-  const missedTasks = useMemo(() => formattedTasks.filter((t) => t.status === 'missed'), [formattedTasks]);
+
 
   const selectedDateTasks = useMemo(() => {
     return formattedTasks.filter((task) => task.dateKey === selectedDateKey);
@@ -865,11 +865,6 @@ function formatDateKey(date: Date) {
   return `${y}-${m}-${d}`;
 }
 
-function getDateWithOffset(days: number) {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return formatDateKey(date);
-}
 
 const styles = StyleSheet.create({
   screen: {

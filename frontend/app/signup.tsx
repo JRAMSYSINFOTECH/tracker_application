@@ -8,6 +8,9 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -194,10 +197,18 @@ export default function SignupScreen() {
   };
 
   return (
-    <View style={commonStyles.screen}>
+    <KeyboardAvoidingView
+      style={commonStyles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <TopCurve />
 
-      <View style={styles.content}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <TouchableOpacity
           style={styles.backButton}
           onPress={handleBack}
@@ -370,8 +381,8 @@ export default function SignupScreen() {
           />
           <Text style={styles.googleText}>Continue with Google</Text>
         </TouchableOpacity>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -383,9 +394,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   content: {
-    flex: 1,
     paddingHorizontal: 28,
     paddingTop: 90,
+    paddingBottom: 40,
   },
   backButton: {
     width: 32,
