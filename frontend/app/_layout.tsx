@@ -1,4 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { AuthProvider, useAuth } from '../constants/src/context/AuthContext';
@@ -8,16 +8,8 @@ import { useEffect } from 'react';
 import { registerForPushNotificationsAsync } from '../services/notificationService';
 
 function RootNavigator() {
-  const { loading, isAuthenticated } = useAuth();
+  const { loading } = useAuth();
   const { theme } = useTheme();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (loading) return;
-    if (!isAuthenticated) {
-      router.replace('/login');
-    }
-  }, [loading, isAuthenticated]);
 
   if (loading) {
     return (

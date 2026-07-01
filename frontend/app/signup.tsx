@@ -1,10 +1,8 @@
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { Redirect, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Image,
@@ -29,7 +27,7 @@ WebBrowser.maybeCompleteAuthSession();
 
 export default function SignupScreen() {
   const router = useRouter();
-  const { signup, googleLogin, isAuthenticated, loading } = useAuth();
+  const { signup, googleLogin, loading } = useAuth();
 
   const [gender, setGender] = useState<'F' | 'M' | 'O'>('M');
   const [name, setName] = useState('');
@@ -111,10 +109,6 @@ export default function SignupScreen() {
     );
   }
 
-  if (isAuthenticated) {
-    return <Redirect href="/(tabs)/home" />;
-  }
-
   const isValidEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
 
   const isStrongPassword = (value: string) =>
@@ -185,7 +179,7 @@ export default function SignupScreen() {
       setSuccess(result.message || 'Signup successful');
       resetForm();
       router.replace('/(tabs)/home');
-    } catch (e) {
+    } catch {
       setError('Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);

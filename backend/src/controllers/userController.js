@@ -1,5 +1,5 @@
 import prisma from "../config/prisma.js";
-import cloudinary from "../config/cloudinary.js";
+import cloudinary, { isCloudinaryConfigured } from "../config/cloudinary.js";
 
 // ================= GET PROFILE =================
 export const getUserProfile = async (req, res) => {
@@ -48,6 +48,12 @@ export const updateUserProfile = async (req, res) => {
 
     // ✅ Upload image to Cloudinary
     if (req.file) {
+      if (!isCloudinaryConfigured()) {
+        return res.status(500).json({
+          message: "Profile image upload is not configured on the backend"
+        });
+      }
+
       console.log("Uploading file to cloudinary...");
       const uploadResult = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
@@ -67,17 +73,19 @@ export const updateUserProfile = async (req, res) => {
     }
 
     // ✅ Email check
-    if (req.body.email) {
-      console.log("Checking email uniqueness for:", req.body.email);
+    const email = req.body.email?.trim().toLowerCase();
+
+    if (email) {
+      console.log("Checking email uniqueness for:", email);
       const existingUser = await prisma.user.findFirst({
         where: {
-          email: req.body.email,
+          email,
           NOT: { user_id: userId }
         }
       });
 
       if (existingUser) {
-        console.log("Email already in use:", req.body.email);
+        console.log("Email already in use:", email);
         return res.status(400).json({ message: "Email already in use" });
       }
     }
@@ -101,12 +109,12 @@ export const updateUserProfile = async (req, res) => {
     // ✅ Update user
     console.log("Updating database record for user_id:", userId);
     
-    let updateData = {
-      name: req.body.name,
-      email: req.body.email,
-      phone: req.body.phone,
-      gender: req.body.gender,
-    };
+    let updateData = {};
+
+    if (req.body.name !== undefined) updateData.name = req.body.name.trim();
+    if (email) updateData.email = email;
+    if (req.body.phone !== undefined) updateData.phone = req.body.phone || null;
+    if (req.body.gender !== undefined) updateData.gender = req.body.gender;
     
     if (profilePicUrl) {
       updateData.profile_pic = profilePicUrl;
@@ -116,7 +124,16 @@ export const updateUserProfile = async (req, res) => {
 
     const updatedUser = await prisma.user.update({
       where: { user_id: userId },
-      data: updateData
+      data: updateData,
+      select: {
+        user_id: true,
+        name: true,
+        email: true,
+        gender: true,
+        phone: true,
+        profile_pic: true,
+        created_at: true
+      }
     });
 
     console.log("Database update successful:", updatedUser);

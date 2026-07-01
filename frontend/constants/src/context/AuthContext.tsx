@@ -89,6 +89,9 @@ export function AuthProvider({
   const [user, setUser] =
     useState<User | null>(null);
 
+  const [token, setToken] =
+    useState<string | null>(null);
+
   const [loading, setLoading] =
     useState(true);
 
@@ -105,7 +108,7 @@ export function AuthProvider({
             'token'
           );
 
-        if (storedCurrentUser) {
+        if (storedCurrentUser && storedToken) {
           setUser(
             JSON.parse(
               storedCurrentUser
@@ -116,6 +119,14 @@ export function AuthProvider({
         if (storedToken) {
           setAuthToken(
             storedToken
+          );
+
+          setToken(
+            storedToken
+          );
+        } else {
+          await AsyncStorage.removeItem(
+            CURRENT_USER_KEY
           );
         }
       } catch (error) {
@@ -170,6 +181,10 @@ export function AuthProvider({
       );
 
       setAuthToken(
+        response.token
+      );
+
+      setToken(
         response.token
       );
 
@@ -231,6 +246,10 @@ export function AuthProvider({
         response.token
       );
 
+      setToken(
+        response.token
+      );
+
       setUser(
         loggedInUser
       );
@@ -287,6 +306,10 @@ export function AuthProvider({
       response.token
     );
 
+    setToken(
+      response.token
+    );
+
     setUser(
       googleUser
     );
@@ -320,6 +343,8 @@ export function AuthProvider({
       );
 
       setAuthToken(null);
+
+      setToken(null);
     } catch (error) {
       console.log(
         'Logout error:',
@@ -342,6 +367,8 @@ export function AuthProvider({
         setUser(null);
 
         setAuthToken(null);
+
+        setToken(null);
       } catch (error) {
         console.log(
           'Clear auth data error:',
@@ -414,7 +441,7 @@ export function AuthProvider({
     <AuthContext.Provider
   value={{
     user,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && !!token,
     loading,
     signup,
     login,
