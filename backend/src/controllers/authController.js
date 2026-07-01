@@ -1,7 +1,7 @@
 import prisma from "../config/prisma.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import cloudinary from "../config/cloudinary.js";
+import cloudinary, { isCloudinaryConfigured } from "../config/cloudinary.js";
 
 // Signup
 export const signup = async (req, res) => {
@@ -25,6 +25,12 @@ export const signup = async (req, res) => {
     let profilePicUrl = null;
 
     if (req.file) {
+      if (!isCloudinaryConfigured()) {
+        return res.status(500).json({
+          message: "Profile image upload is not configured on the backend"
+        });
+      }
+
       const uploadResult = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           { folder: "profile_pics" },

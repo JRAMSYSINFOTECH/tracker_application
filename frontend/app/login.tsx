@@ -1,10 +1,8 @@
 import * as Google from 'expo-auth-session/providers/google';
 import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { Redirect, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRouter } from 'expo-router';
 import {
   ActivityIndicator,
   Image,
@@ -29,7 +27,6 @@ export default function LoginScreen() {
   const {
     login,
     googleLogin,
-    isAuthenticated,
     loading,
   } = useAuth();
 
@@ -95,10 +92,6 @@ export default function LoginScreen() {
     );
   }
 
-  if (isAuthenticated) {
-    return <Redirect href="/(tabs)/home" />;
-  }
-
   const handleLogin = async () => {
     if (submitting) return;
 
@@ -125,7 +118,7 @@ export default function LoginScreen() {
       setEmail('');
       setPassword('');
       router.replace('/(tabs)/home');
-    } catch (e) {
+    } catch {
       setError('Something went wrong. Please try again.');
     } finally {
       setSubmitting(false);
@@ -152,7 +145,7 @@ export default function LoginScreen() {
         <Text style={styles.title}>Login</Text>
 
         <View style={styles.accountRow}>
-          <Text style={styles.accountText}>Don't have an account? </Text>
+          <Text style={styles.accountText}>{"Don't have an account? "}</Text>
           <TouchableOpacity
             onPress={() => router.replace('/signup')}
             disabled={submitting}

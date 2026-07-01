@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { API_URL } from '../constants/api';
 
 export type AuthResponse = {
@@ -164,6 +165,43 @@ const buildUrl = (path: string) => {
   return `${API_URL}${normalizedPath}`;
 };
 
+const getImageFileInfo = (uri: string) => {
+  const cleanUri = uri.split('?')[0];
+  const uriParts = cleanUri.split('/');
+  const rawFileName = uriParts[uriParts.length - 1] || '';
+  const hasExtension = /\.[a-zA-Z0-9]+$/.test(rawFileName);
+  const fileName = hasExtension ? rawFileName : 'profile-pic.jpg';
+  const fileExt = fileName.split('.').pop()?.toLowerCase() || 'jpg';
+  const fileType = fileExt === 'jpg' ? 'jpeg' : fileExt;
+
+  return {
+    fileName,
+    mimeType: `image/${fileType}`,
+  };
+};
+
+const appendProfileImage = async (formData: FormData, uri: string) => {
+  const { fileName, mimeType } = getImageFileInfo(uri);
+
+  if (Platform.OS === 'web') {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const typedBlob = blob.type ? blob : blob.slice(0, blob.size, mimeType);
+
+    (formData.append as any)('profile_pic', typedBlob, fileName);
+    return;
+  }
+
+  formData.append(
+    'profile_pic',
+    {
+      uri,
+      name: fileName,
+      type: mimeType,
+    } as any
+  );
+};
+
 export const apiRequest = async <T>(
   path: string,
   options: ApiRequestOptions = {}
@@ -225,7 +263,7 @@ export const getApiErrorMessage = (error: unknown, fallback: string) => {
 };
 
 export const authApi = {
-  signup: (payload: SignupPayload) => {
+  signup: async (payload: SignupPayload) => {
     if (payload.profileImageUri) {
       const formData = new FormData();
 
@@ -237,20 +275,7 @@ export const authApi = {
         formData.append('gender', payload.gender);
       }
 
-      const uri = payload.profileImageUri;
-      const uriParts = uri.split('/');
-      const fileName = uriParts[uriParts.length - 1];
-      const fileExt = fileName.split('.').pop() || 'jpg';
-      const fileType = fileExt === 'jpg' ? 'jpeg' : fileExt;
-
-      formData.append(
-        'profile_pic',
-        {
-          uri,
-          name: fileName,
-          type: `image/${fileType}`,
-        } as any
-      );
+      await appendProfileImage(formData, payload.profileImageUri);
 
       return apiRequest<AuthResponse>(
         '/api/auth/signup',
@@ -387,7 +412,7 @@ export const aiApi = {
 
 export const userApi = {
   getProfile: () => apiRequest<any>('/api/user/profile'),
-  updateProfile: (payload: UpdateProfilePayload) => {
+  updateProfile: async (payload: UpdateProfilePayload) => {
     const formData = new FormData();
     formData.append('name', payload.name);
     formData.append('email', payload.email);
@@ -400,16 +425,7 @@ export const userApi = {
     } else if (payload.profileImageUri) {
       const uri = payload.profileImageUri;
       if (!uri.startsWith('http://') && !uri.startsWith('https://')) {
-        const uriParts = uri.split('/');
-        const fileName = uriParts[uriParts.length - 1];
-        const fileExt = fileName.split('.').pop() || 'jpg';
-        const fileType = fileExt === 'jpg' ? 'jpeg' : fileExt;
-
-        formData.append('profile_pic', {
-          uri,
-          name: fileName,
-          type: `image/${fileType}`,
-        } as any);
+        await appendProfileImage(formData, uri);
       }
     }
 
