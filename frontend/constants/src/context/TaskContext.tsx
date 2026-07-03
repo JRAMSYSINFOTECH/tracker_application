@@ -19,7 +19,11 @@ export type TaskItem = {
   status: TaskStatus;
   description?: string;
   importance?: string;
+  repeat_frequency: 'once' | 'daily' | 'weekly' | 'custom';
+  repeat_days?: string | null;
+  estimated_minutes: number;
 };
+
 
 type TaskContextType = {
   tasks: TaskItem[];
@@ -64,6 +68,9 @@ export const TaskProvider = ({
         status: task.status === 'completed' ? 'completed' : task.status === 'missed' ? 'missed' : 'pending',
         description: task.description ?? undefined,
         importance: task.importance_hint ?? undefined,
+        repeat_frequency: (task.repeat_frequency ?? 'once') as TaskItem['repeat_frequency'],
+        repeat_days: task.repeat_days ?? null,
+        estimated_minutes: task.estimated_minutes ?? 60,
       }));
 
       setTasks(formattedTasks);
@@ -78,6 +85,7 @@ export const TaskProvider = ({
     }
   };
 
+
   const addTask = async (payload: CreateTaskPayload) => {
     try {
       const response = await taskApi.create(payload);
@@ -90,6 +98,9 @@ export const TaskProvider = ({
         status: response.task.status === 'completed' ? 'completed' : response.task.status === 'missed' ? 'missed' : 'pending',
         description: response.task.description ?? undefined,
         importance: response.task.importance_hint ?? undefined,
+        repeat_frequency: (response.task.repeat_frequency ?? 'once') as TaskItem['repeat_frequency'],
+        repeat_days: response.task.repeat_days ?? null,
+        estimated_minutes: response.task.estimated_minutes ?? 60,
       };
 
       setTasks((prev) => [...prev, newTask]);
@@ -98,6 +109,7 @@ export const TaskProvider = ({
       throw error; // re-throw so add-task screen can show error to user
     }
   };
+
   const updateTask = async (
     id: number,
     updates: Partial<TaskItem>
