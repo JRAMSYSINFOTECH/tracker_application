@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Platform,
   ScrollView,
   StyleSheet,
@@ -13,22 +14,91 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
 import { useTaskContext } from '../../../constants/src/context/TaskContext';
+import type { TaskItem } from '../../../constants/src/context/TaskContext';
 import { useTheme } from '../../../constants/src/context/ThemeContext';
+import { occurrenceApi } from '../../../services/api';
+import type { OccurrenceStatus } from '../../../services/api';
 
 type FilterType = 'All' | 'ToDo' | 'InProgress' | 'Completed';
 
 type PlanItem = {
+  taskId: number;
   date: string;
   time: string;
   title: string;
   note: string;
   icon: keyof typeof Ionicons.glyphMap;
   status: Exclude<FilterType, 'All'>;
+  repeat_frequency: TaskItem['repeat_frequency'];
+  hasOverlap: boolean;
+  estimatedMinutes: number;
+  deadlineMs: number; // for overlap computation
 };
+
+// ── Recurrence helpers ────────────────────────────────────────────────
+function taskAppearsOnDate(task: TaskItem, dateIso: string): boolean {
+  const target = new Date(dateIso + 'T00:00:00');
+  const taskDate = new Date(task.deadline);
+  const taskDateIso = formatDateToISO(taskDate);
+
+  switch (task.repeat_frequency) {
+    case 'once':
+      // Show only on the task's own deadline date; hide if date has passed
+      return taskDateIso === dateIso;
+
+    case 'daily':
+      // Show every day on or after the task's start date (unless permanently completed/missed)
+      if (task.status === 'missed') return false;
+      return taskDate <= new Date(dateIso + 'T23:59:59');
+
+    case 'weekly': {
+      // Show once per week on the same day-of-week as the original deadline
+      if (task.status === 'missed') return false;
+      const taskDayOfWeek = taskDate.getDay();
+      const targetDayOfWeek = target.getDay();
+      if (taskDayOfWeek !== targetDayOfWeek) return false;
+      return taskDate <= new Date(dateIso + 'T23:59:59');
+    }
+
+    case 'custom': {
+      // Show only on days matching repeat_days (e.g. "1,3,5")
+      if (task.status === 'missed') return false;
+      if (!task.repeat_days) return false;
+      const repeatDayNumbers = task.repeat_days
+        .split(',')
+        .map((d) => parseInt(d.trim()))
+        .filter((d) => !isNaN(d));
+      const targetDOW = target.getDay();
+      if (!repeatDayNumbers.includes(targetDOW)) return false;
+      return taskDate <= new Date(dateIso + 'T23:59:59');
+    }
+
+    default:
+      return false;
+  }
+}
+
+function detectOverlaps(items: PlanItem[]): Set<number> {
+  const overlappingIds = new Set<number>();
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      const a = items[i];
+      const b = items[j];
+      const aEnd = a.deadlineMs + a.estimatedMinutes * 60_000;
+      const bEnd = b.deadlineMs + b.estimatedMinutes * 60_000;
+      // Strict overlap: touching endpoints are NOT overlapping
+      if (a.deadlineMs < bEnd && aEnd > b.deadlineMs) {
+        overlappingIds.add(a.taskId);
+        overlappingIds.add(b.taskId);
+      }
+    }
+  }
+  return overlappingIds;
+}
 
 export default function TodayPlanScreen() {
   const router = useRouter();
-  const { tasks } = useTaskContext();
+  const { tasks, loadTasks } = useTaskContext();
   const { theme } = useTheme();
 
   const today = new Date();
@@ -38,61 +108,106 @@ export default function TodayPlanScreen() {
   const [selectedDate, setSelectedDate] = useState(todayIso);
   const [showPicker, setShowPicker] = useState(false);
 
-  const plans: PlanItem[] = tasks.map((task) => {
+  // Per-day occurrence map: taskId → OccurrenceStatus for selectedDate
+  const [occurrenceMap, setOccurrenceMap] = useState<Record<number, OccurrenceStatus>>({});
+  const [occurrenceLoading, setOccurrenceLoading] = useState(false);
 
-    const taskDate = new Date(task.time);
+  const loadOccurrences = useCallback(async (date: string) => {
+    setOccurrenceLoading(true);
+    try {
+      const data = await occurrenceApi.getForDate(date);
+      const map: Record<number, OccurrenceStatus> = {};
+      data.forEach((o) => { map[o.task_id] = o.status; });
+      setOccurrenceMap(map);
+    } catch {
+      // silently ignore — occurrence data is best-effort
+    } finally {
+      setOccurrenceLoading(false);
+    }
+  }, []);
 
-    return {
-      date: formatDateToISO(taskDate),
+  useEffect(() => {
+    loadOccurrences(selectedDate);
+  }, [selectedDate]);
 
-      time: taskDate.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
+  const handleDateChange = (date: string) => {
+    setSelectedDate(date);
+  };
 
-      title: task.title,
+  // Build plan items for the selected date applying recurrence rules
+  const allPlansForDate = useMemo<PlanItem[]>(() => {
+    const applicable = tasks.filter((t) => taskAppearsOnDate(t, selectedDate));
 
-      note: 'Task from planner',
+    const items: PlanItem[] = applicable.map((task) => {
+      const taskDate = new Date(task.deadline);
+      const occStatus = occurrenceMap[task.id];
 
-      icon:
-        task.status === 'completed'
-          ? 'checkmark-circle-outline'
-          : 'clipboard-outline',
+      // Effective status: use occurrence record if available (recurring tasks),
+      // otherwise fall back to task.status for once tasks
+      let effectiveStatus: PlanItem['status'];
+      if (occStatus === 'completed') {
+        effectiveStatus = 'Completed';
+      } else if (task.status === 'completed' && task.repeat_frequency === 'once') {
+        effectiveStatus = 'Completed';
+      } else {
+        effectiveStatus = 'ToDo';
+      }
 
-      status:
-        task.status === 'completed'
-          ? 'Completed'
-          : 'ToDo',
-    };
-  });
+      return {
+        taskId: task.id,
+        date: formatDateToISO(taskDate),
+        time: taskDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        title: task.title,
+        note: task.description || (task.repeat_frequency !== 'once'
+          ? `Repeats ${task.repeat_frequency}`
+          : 'Task from planner'),
+        icon: effectiveStatus === 'Completed' ? 'checkmark-circle-outline' : 'clipboard-outline',
+        status: effectiveStatus,
+        repeat_frequency: task.repeat_frequency,
+        hasOverlap: false, // computed below
+        estimatedMinutes: task.estimated_minutes ?? 60,
+        deadlineMs: taskDate.getTime(),
+      };
+    });
+
+    // Sort by time ascending
+    items.sort((a, b) => a.deadlineMs - b.deadlineMs);
+
+    // Detect overlaps
+    const overlappingIds = detectOverlaps(items);
+    return items.map((item) => ({
+      ...item,
+      hasOverlap: overlappingIds.has(item.taskId),
+    }));
+  }, [tasks, selectedDate, occurrenceMap]);
 
   const filters: FilterType[] = ['All', 'ToDo', 'InProgress', 'Completed'];
 
   const selectedDateLabel = useMemo(() => {
-    return formatDateForDisplay(new Date(selectedDate));
+    return formatDateForDisplay(new Date(selectedDate + 'T12:00:00'));
   }, [selectedDate]);
 
   const filteredPlans = useMemo(() => {
-    const datePlans = plans.filter((item) => item.date === selectedDate);
-    if (selectedFilter === 'All') return datePlans;
-    return datePlans.filter((item) => item.status === selectedFilter);
-  }, [selectedDate, selectedFilter]);
+    if (selectedFilter === 'All') return allPlansForDate;
+    return allPlansForDate.filter((item) => item.status === selectedFilter);
+  }, [allPlansForDate, selectedFilter]);
 
   const completionPercent = useMemo(() => {
-    const datePlans = plans.filter((item) => item.date === selectedDate);
-    if (datePlans.length === 0) return 0;
-    const completedCount = datePlans.filter(
-      (item) => item.status === 'Completed'
-    ).length;
-    return Math.round((completedCount / datePlans.length) * 100);
-  }, [selectedDate]);
+    if (allPlansForDate.length === 0) return 0;
+    const completedCount = allPlansForDate.filter((item) => item.status === 'Completed').length;
+    return Math.round((completedCount / allPlansForDate.length) * 100);
+  }, [allPlansForDate]);
 
+  // Build marked dates — mark every date that has at least one applicable task
   const markedDates = useMemo(() => {
     const marked: Record<string, any> = {};
 
-    plans.forEach((item) => {
-      marked[item.date] = {
-        ...(marked[item.date] || {}),
+    tasks.forEach((task) => {
+      // For recurring tasks, mark each day-of-week pattern differently
+      // For simplicity, always mark the exact task deadline date
+      const taskDateIso = formatDateToISO(new Date(task.deadline));
+      marked[taskDateIso] = {
+        ...(marked[taskDateIso] || {}),
         marked: true,
         dotColor: theme.calendarDot,
       };
@@ -107,7 +222,22 @@ export default function TodayPlanScreen() {
     };
 
     return marked;
-  }, [plans, selectedDate]);
+  }, [tasks, selectedDate, theme]);
+
+  const handleMarkDone = async (item: PlanItem) => {
+    const newStatus: OccurrenceStatus =
+      occurrenceMap[item.taskId] === 'completed' ? 'pending' : 'completed';
+    try {
+      await occurrenceApi.mark({
+        task_id: item.taskId,
+        occurrence_date: selectedDate,
+        status: newStatus,
+      });
+      setOccurrenceMap((prev) => ({ ...prev, [item.taskId]: newStatus }));
+    } catch {
+      // silently ignore
+    }
+  };
 
   const FilterChip = ({
     label,
@@ -131,41 +261,36 @@ export default function TodayPlanScreen() {
 
   const getStatusStyle = (status: PlanItem['status']) => {
     switch (status) {
-      case 'ToDo':
-        return styles.todoBadge;
-      case 'InProgress':
-        return styles.progressBadge;
-      case 'Completed':
-        return styles.completedBadge;
-      default:
-        return styles.todoBadge;
+      case 'ToDo': return styles.todoBadge;
+      case 'InProgress': return styles.progressBadge;
+      case 'Completed': return styles.completedBadge;
+      default: return styles.todoBadge;
     }
   };
 
   const getStatusTextStyle = (status: PlanItem['status']) => {
     switch (status) {
-      case 'ToDo':
-        return styles.todoText;
-      case 'InProgress':
-        return styles.progressText;
-      case 'Completed':
-        return styles.completedText;
-      default:
-        return styles.todoText;
+      case 'ToDo': return styles.todoText;
+      case 'InProgress': return styles.progressText;
+      case 'Completed': return styles.completedText;
+      default: return styles.todoText;
     }
   };
 
-  const openPicker = () => {
-    setShowPicker(true);
+  const getRepeatBadge = (freq: TaskItem['repeat_frequency']) => {
+    switch (freq) {
+      case 'daily': return { label: '🔄 Daily', color: '#6366F1' };
+      case 'weekly': return { label: '📅 Weekly', color: '#0EA5E9' };
+      case 'custom': return { label: '⚙️ Custom', color: '#8B5CF6' };
+      default: return null;
+    }
   };
+
+  const openPicker = () => setShowPicker(true);
 
   const onChangeDate = (_event: any, date?: Date) => {
-    if (Platform.OS !== 'ios') {
-      setShowPicker(false);
-    }
-    if (date) {
-      setSelectedDate(formatDateToISO(date));
-    }
+    if (Platform.OS !== 'ios') setShowPicker(false);
+    if (date) handleDateChange(formatDateToISO(date));
   };
 
   return (
@@ -210,7 +335,7 @@ export default function TodayPlanScreen() {
 
         {showPicker && (
           <DateTimePicker
-            value={new Date(selectedDate)}
+            value={new Date(selectedDate + 'T12:00:00')}
             mode="date"
             display="default"
             onChange={onChangeDate}
@@ -222,7 +347,9 @@ export default function TodayPlanScreen() {
             <View style={{ flex: 1, paddingRight: 16 }}>
               <Text style={[styles.highlightTitle, { color: theme.highlightTitle }]}>Focus for Today</Text>
               <Text style={[styles.highlightText, { color: theme.highlightText }]}>
-                Complete important tasks first, then continue practice and revision.
+                {allPlansForDate.length === 0
+                  ? 'No tasks scheduled for this date. Enjoy your free time!'
+                  : `${allPlansForDate.length} task${allPlansForDate.length > 1 ? 's' : ''} scheduled. Stay focused!`}
               </Text>
             </View>
 
@@ -236,7 +363,7 @@ export default function TodayPlanScreen() {
             <View
               style={[
                 styles.progressFill,
-                { width: `${Math.max(completionPercent, 6)}%`, backgroundColor: theme.progressFill },
+                { width: `${Math.max(completionPercent, 6)}%` as any, backgroundColor: theme.progressFill },
               ]}
             />
           </View>
@@ -247,7 +374,7 @@ export default function TodayPlanScreen() {
         <View style={[styles.calendarCard, { backgroundColor: theme.dateCardBg, borderColor: theme.dateCardBorder }]}>
           <Calendar
             current={selectedDate}
-            onDayPress={(day) => setSelectedDate(day.dateString)}
+            onDayPress={(day) => handleDateChange(day.dateString)}
             markedDates={markedDates}
             enableSwipeMonths
             theme={{
@@ -297,42 +424,88 @@ export default function TodayPlanScreen() {
           <Text style={[styles.scheduleDateText, { color: theme.planScheduleDate }]}>{selectedDateLabel}</Text>
         </View>
 
-        {filteredPlans.map((item, index) => (
-          <View key={`${item.title}-${index}`} style={styles.timelineRow}>
-            <View style={styles.timelineTimeWrap}>
-              <Text style={[styles.timelineTime, { color: theme.timelineTime }]}>{item.time}</Text>
-            </View>
+        {occurrenceLoading && (
+          <ActivityIndicator size="small" color={theme.primary} style={{ marginBottom: 12 }} />
+        )}
 
-            <View style={styles.timelineTrackWrap}>
-              <View style={[styles.timelineDot, { backgroundColor: theme.timelineDot }]} />
-              {index !== filteredPlans.length - 1 && (
-                <View style={[styles.timelineLine, { backgroundColor: theme.timelineLine }]} />
-              )}
-            </View>
+        {filteredPlans.map((item, index) => {
+          const repeatBadge = getRepeatBadge(item.repeat_frequency);
+          const isDoneToday = occurrenceMap[item.taskId] === 'completed';
+          const isRecurring = item.repeat_frequency !== 'once';
 
-            <View style={[styles.timelineCard, { backgroundColor: theme.timelineCardBg, borderColor: theme.timelineCardBorder }]}>
-              <View style={styles.cardTopRow}>
-                <View style={[styles.iconBox, { backgroundColor: theme.iconBoxBg }]}>
-                  <Ionicons name={item.icon} size={18} color={theme.planTitle} />
-                </View>
-
-                <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
-                  <Text
-                    style={[
-                      styles.statusBadgeText,
-                      getStatusTextStyle(item.status),
-                    ]}
-                  >
-                    {item.status}
-                  </Text>
-                </View>
+          return (
+            <View key={`${item.taskId}-${index}`} style={styles.timelineRow}>
+              <View style={styles.timelineTimeWrap}>
+                <Text style={[styles.timelineTime, { color: theme.timelineTime }]}>{item.time}</Text>
               </View>
 
-              <Text style={[styles.planTitle, { color: theme.planTitleText }]}>{item.title}</Text>
-              <Text style={[styles.planNote, { color: theme.planNoteText }]}>{item.note}</Text>
+              <View style={styles.timelineTrackWrap}>
+                <View style={[
+                  styles.timelineDot,
+                  { backgroundColor: item.hasOverlap ? '#E97316' : theme.timelineDot }
+                ]} />
+                {index !== filteredPlans.length - 1 && (
+                  <View style={[styles.timelineLine, { backgroundColor: theme.timelineLine }]} />
+                )}
+              </View>
+
+              <View style={[
+                styles.timelineCard,
+                { backgroundColor: theme.timelineCardBg, borderColor: item.hasOverlap ? '#E97316' : theme.timelineCardBorder },
+                item.hasOverlap && styles.overlapCard,
+              ]}>
+                <View style={styles.cardTopRow}>
+                  <View style={[styles.iconBox, { backgroundColor: theme.iconBoxBg }]}>
+                    <Ionicons name={item.icon} size={18} color={theme.planTitle} />
+                  </View>
+
+                  <View style={styles.badgesRow}>
+                    {item.hasOverlap && (
+                      <View style={styles.overlapBadge}>
+                        <Ionicons name="warning-outline" size={12} color="#E97316" />
+                        <Text style={styles.overlapBadgeText}>Overlap</Text>
+                      </View>
+                    )}
+                    {repeatBadge && (
+                      <View style={[styles.repeatBadge, { borderColor: repeatBadge.color }]}>
+                        <Text style={[styles.repeatBadgeText, { color: repeatBadge.color }]}>{repeatBadge.label}</Text>
+                      </View>
+                    )}
+                    <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
+                      <Text style={[styles.statusBadgeText, getStatusTextStyle(item.status)]}>
+                        {item.status}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <Text style={[styles.planTitle, { color: theme.planTitleText }]}>{item.title}</Text>
+                <Text style={[styles.planNote, { color: theme.planNoteText }]}>{item.note}</Text>
+
+                {/* Per-day done button for recurring tasks */}
+                {isRecurring && (
+                  <TouchableOpacity
+                    style={[
+                      styles.doneBtn,
+                      { backgroundColor: isDoneToday ? '#22c55e20' : theme.dateIconWrapBg, borderColor: isDoneToday ? '#22c55e' : theme.dateCardBorder }
+                    ]}
+                    onPress={() => handleMarkDone(item)}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons
+                      name={isDoneToday ? 'checkmark-circle' : 'checkmark-circle-outline'}
+                      size={16}
+                      color={isDoneToday ? '#22c55e' : theme.planTitle}
+                    />
+                    <Text style={[styles.doneBtnText, { color: isDoneToday ? '#22c55e' : theme.planTitle }]}>
+                      {isDoneToday ? "Done today ✓" : "Mark done today"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
 
         {filteredPlans.length === 0 && (
           <View style={[styles.emptyCard, { backgroundColor: theme.emptyCardBg, borderColor: theme.emptyCardBorder }]}>
@@ -348,6 +521,7 @@ export default function TodayPlanScreen() {
           style={[styles.primaryBtn, { backgroundColor: theme.primaryBtnBg, borderColor: theme.primaryBtnBorder }]}
           onPress={() => router.push('/(tabs)/home/add-task')}
         >
+          <Ionicons name="add" size={20} color={theme.planPrimaryBtnText} />
           <Text style={[styles.primaryBtnText, { color: theme.planPrimaryBtnText }]}>Add New Task</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -356,13 +530,10 @@ export default function TodayPlanScreen() {
 }
 
 function formatDateToISO(date: Date) {
-  return date.toISOString().split('T')[0];
-}
-
-function getDateWithOffset(days: number) {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return formatDateToISO(date);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function formatDateForDisplay(date: Date) {
@@ -374,9 +545,7 @@ function formatDateForDisplay(date: Date) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   topShape: {
     position: 'absolute',
     top: -35,
@@ -428,27 +597,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  dateLabel: {
-    fontSize: 13,
-    color: '#777',
-    marginBottom: 2,
-  },
-  dateValue: {
-    fontSize: 16,
-    color: '#111',
-    fontWeight: '700',
-  },
+  dateLabel: { fontSize: 13, color: '#777', marginBottom: 2 },
+  dateValue: { fontSize: 16, color: '#111', fontWeight: '700' },
   changeDateBtn: {
-    backgroundColor: '#F9EDB8',
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 18,
   },
-  changeDateBtnText: {
-    color: '#111',
-    fontSize: 12,
-    fontWeight: '700',
-  },
+  changeDateBtnText: { color: '#111', fontSize: 12, fontWeight: '700' },
   highlightCard: {
     borderRadius: 24,
     padding: 18,
@@ -460,85 +616,38 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 14,
   },
-  highlightTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111',
-    marginBottom: 6,
-  },
-  highlightText: {
-    fontSize: 14,
-    color: '#444',
-    lineHeight: 20,
-  },
+  highlightTitle: { fontSize: 18, fontWeight: '700', marginBottom: 6 },
+  highlightText: { fontSize: 14, lineHeight: 20 },
   percentBadge: {
     width: 72,
     height: 72,
     borderRadius: 20,
-    backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  percentValue: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#111',
-  },
-  percentLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 2,
-  },
-  progressTrack: {
-    height: 10,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 10,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    color: '#111',
-    marginBottom: 12,
-    fontWeight: '700',
-  },
+  percentValue: { fontSize: 22, fontWeight: '800' },
+  percentLabel: { fontSize: 12, marginTop: 2 },
+  progressTrack: { height: 10, borderRadius: 10, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 10 },
+  sectionTitle: { fontSize: 22, marginBottom: 12, fontWeight: '700' },
   calendarCard: {
     borderWidth: 1,
     borderRadius: 24,
     padding: 10,
     marginBottom: 20,
   },
-  calendar: {
-    borderRadius: 18,
-    overflow: 'hidden',
-  },
-  filterRow: {
-    paddingBottom: 14,
-    gap: 10,
-  },
+  calendar: { borderRadius: 18, overflow: 'hidden' },
+  filterRow: { paddingBottom: 14, gap: 10 },
   filterChip: {
     paddingHorizontal: 16,
     height: 38,
     borderRadius: 19,
     borderWidth: 1,
-    borderColor: '#111',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
-  activeFilterChip: {
-    borderColor: '#111',
-  },
-  filterText: {
-    fontSize: 14,
-    color: '#111',
-    fontWeight: '500',
-  },
-  activeFilterText: {
-    fontWeight: '700',
-  },
+  filterText: { fontSize: 14, fontWeight: '500' },
+  activeFilterText: { fontWeight: '700' },
   scheduleHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -546,24 +655,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 10,
   },
-  scheduleDateText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
+  scheduleDateText: { fontSize: 13, fontWeight: '700' },
   timelineRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 14,
   },
-  timelineTimeWrap: {
-    width: 78,
-    paddingTop: 10,
-  },
-  timelineTime: {
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '700',
-  },
+  timelineTimeWrap: { width: 78, paddingTop: 10 },
+  timelineTime: { fontSize: 14, fontWeight: '700' },
   timelineTrackWrap: {
     width: 26,
     alignItems: 'center',
@@ -589,11 +688,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginLeft: 6,
   },
+  overlapCard: {
+    borderWidth: 1.5,
+  },
   cardTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 10,
+    flexWrap: 'wrap',
+    gap: 6,
   },
   iconBox: {
     width: 40,
@@ -602,76 +706,89 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  badgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  overlapBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#FFF7ED',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: '#E97316',
+  },
+  overlapBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#E97316',
+  },
+  repeatBadge: {
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
+  },
+  repeatBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
   statusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 18,
   },
-  statusBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  todoBadge: {
-    backgroundColor: '#FCE7F3',
-  },
-  todoText: {
-    color: '#C0266D',
-  },
-  progressBadge: {
-    backgroundColor: '#FEF3C7',
-  },
-  progressText: {
-    color: '#B45309',
-  },
-  completedBadge: {
-    backgroundColor: '#DCFCE7',
-  },
-  completedText: {
-    color: '#15803D',
-  },
+  statusBadgeText: { fontSize: 12, fontWeight: '700' },
+  todoBadge: { backgroundColor: '#FCE7F3' },
+  todoText: { color: '#C0266D' },
+  progressBadge: { backgroundColor: '#FEF3C7' },
+  progressText: { color: '#B45309' },
+  completedBadge: { backgroundColor: '#DCFCE7' },
+  completedText: { color: '#15803D' },
   planTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#111',
-    marginBottom: 6,
+    marginBottom: 4,
   },
-  planNote: {
-    fontSize: 14,
-    color: '#555',
-    lineHeight: 20,
+  planNote: { fontSize: 14, lineHeight: 20, marginBottom: 10 },
+  doneBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    marginTop: 4,
+  },
+  doneBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   emptyCard: {
-    backgroundColor: '#FAFAFA',
     borderRadius: 20,
     padding: 18,
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#ECECEC',
   },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111',
-    marginBottom: 4,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-  },
+  emptyTitle: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  emptyText: { fontSize: 14, lineHeight: 20 },
   primaryBtn: {
     height: 48,
     borderWidth: 1,
-    borderColor: '#111',
     borderRadius: 24,
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     marginTop: 10,
     marginBottom: 20,
-    backgroundColor: '#fff',
   },
-  primaryBtnText: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  primaryBtnText: { fontSize: 16, fontWeight: '700' },
 });

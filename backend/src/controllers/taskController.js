@@ -2,6 +2,7 @@ import prisma from "../config/prisma.js";
 
 import { markPlanAsStale, spawnNextOccurrence } from "../utils/taskUtils.js";
 
+
 // ✅ Create Task
 export const createTask = async (req, res) => {
   const userId = req.user.user_id;
@@ -12,7 +13,10 @@ export const createTask = async (req, res) => {
       deadline,
       estimated_minutes,
       status,
-      repeat_frequency
+      repeat_frequency,
+      repeat_days,
+      description,
+      importance_hint
     } = req.body;
 
 
@@ -43,10 +47,13 @@ export const createTask = async (req, res) => {
       data: {
         user_id,
         title,
+        description: description || null,
+        importance_hint: importance_hint || null,
         deadline,
-        estimated_minutes,
+        estimated_minutes: estimated_minutes || 60,
         status,
-        repeat_frequency: repeat_frequency || "once"
+        repeat_frequency: repeat_frequency || "once",
+        repeat_days: repeat_days || null
       },
     });
 
@@ -91,6 +98,7 @@ export const getAllTasks = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 // ✅ Get Single Task
 export const getTaskById = async (req, res) => {
@@ -142,7 +150,8 @@ export const updateTask = async (req, res) => {
         ...(req.body.importance_hint && { importance_hint: req.body.importance_hint }),
         ...(req.body.estimated_minutes && { estimated_minutes: req.body.estimated_minutes }),
         ...(req.body.deadline && { deadline: new Date(req.body.deadline) }),
-        ...(req.body.repeat_frequency && { repeat_frequency: req.body.repeat_frequency })
+        ...(req.body.repeat_frequency && { repeat_frequency: req.body.repeat_frequency }),
+        ...(req.body.repeat_days !== undefined && { repeat_days: req.body.repeat_days })
       }
     });
 
@@ -161,6 +170,7 @@ export const updateTask = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 // ✅ Delete Task
 export const deleteTask = async (req, res) => {
@@ -191,3 +201,141 @@ export const deleteTask = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// ✅ Check Time Overlap
+export const checkOverlap = async (req, res) => {
+  const userId = req.user.user_id;
+
+  try {
+    const { deadline, estimated_minutes, exclude_task_id } = req.body;
+
+    if (!deadline || !estimated_minutes) {
+      return res.status(400).json({
+        message: "deadline and estimated_minutes are required"
+      });
+    }
+
+    const startTime = new Date(deadline);
+    const endTime = new Date(startTime.getTime() + Number(estimated_minutes) * 60 * 1000);
+
+    // Find tasks whose [deadline, deadline + estimated_minutes] overlaps with [startTime, endTime]
+    // Overlap condition: taskStart < endTime AND taskEnd > startTime
+    const userTasks = await prisma.task.findMany({
+      where: {
+        user_id: userId,
+        status: { notIn: ["completed", "missed"] },
+        ...(exclude_task_id && { task_id: { not: Number(exclude_task_id) } })
+      },
+      select: {
+        task_id: true,
+        title: true,
+        deadline: true,
+        estimated_minutes: true
+      }
+    });
+
+    const overlapping = userTasks.filter(task => {
+      const taskStart = new Date(task.deadline);
+      const taskEnd = new Date(taskStart.getTime() + (task.estimated_minutes || 60) * 60 * 1000);
+      // Strict overlap: intervals must actually intersect (touching endpoints = no overlap)
+      return taskStart < endTime && taskEnd > startTime;
+    });
+
+    if (overlapping.length > 0) {
+      return res.json({
+        hasOverlap: true,
+        conflicts: overlapping.map(t => ({
+          task_id: t.task_id,
+          title: t.title,
+          start: t.deadline,
+          end: new Date(new Date(t.deadline).getTime() + (t.estimated_minutes || 60) * 60 * 1000)
+        }))
+      });
+    }
+
+    res.json({ hasOverlap: false, conflicts: [] });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Mark Task Occurrence (per-day completion for recurring tasks)
+export const markOccurrence = async (req, res) => {
+  const userId = req.user.user_id;
+
+  try {
+    const { task_id, occurrence_date, status } = req.body;
+
+    if (!task_id || !occurrence_date || !status) {
+      return res.status(400).json({ message: "task_id, occurrence_date and status are required" });
+    }
+
+    const validStatuses = ["pending", "completed", "skipped"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+
+    // Verify task belongs to this user
+    const task = await prisma.task.findFirst({
+      where: { task_id: Number(task_id), user_id: userId }
+    });
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    // Upsert occurrence record
+    const occurrence = await prisma.taskOccurrence.upsert({
+      where: {
+        task_id_occurrence_date: {
+          task_id: Number(task_id),
+          occurrence_date: new Date(occurrence_date)
+        }
+      },
+      create: {
+        task_id: Number(task_id),
+        occurrence_date: new Date(occurrence_date),
+        status
+      },
+      update: { status }
+    });
+
+    res.json({ message: "Occurrence updated", occurrence });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✅ Get Task Occurrences for a date range
+export const getOccurrences = async (req, res) => {
+  const userId = req.user.user_id;
+
+  try {
+    const { date } = req.query;
+    const targetDate = date ? new Date(date) : new Date();
+    const dateStart = new Date(targetDate);
+    dateStart.setHours(0, 0, 0, 0);
+    const dateEnd = new Date(targetDate);
+    dateEnd.setHours(23, 59, 59, 999);
+
+    const occurrences = await prisma.taskOccurrence.findMany({
+      where: {
+        occurrence_date: {
+          gte: dateStart,
+          lte: dateEnd
+        },
+        task: { user_id: userId }
+      },
+      include: {
+        task: { select: { title: true, repeat_frequency: true } }
+      }
+    });
+
+    res.json(occurrences);
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

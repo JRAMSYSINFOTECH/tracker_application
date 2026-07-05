@@ -47,6 +47,8 @@ export type BackendTask = {
   estimated_minutes: number;
   importance_hint: TaskImportance | null;
   status: TaskStatus;
+  repeat_frequency: ReminderFrequency;
+  repeat_days: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -59,6 +61,7 @@ export type CreateTaskPayload = {
   importance_hint?: TaskImportance;
   status?: TaskStatus;
   repeat_frequency?: ReminderFrequency;
+  repeat_days?: string | null;
 };
 
 
@@ -328,6 +331,28 @@ export const authApi = {
     ),
 };
 
+export type OverlapConflict = {
+  task_id: number;
+  title: string;
+  start: string;
+  end: string;
+};
+
+export type OverlapCheckResponse = {
+  hasOverlap: boolean;
+  conflicts: OverlapConflict[];
+};
+
+export type OccurrenceStatus = 'pending' | 'completed' | 'skipped';
+
+export type TaskOccurrence = {
+  occurrence_id: number;
+  task_id: number;
+  occurrence_date: string;
+  status: OccurrenceStatus;
+  created_at: string;
+};
+
 export const taskApi = {
   list: () => apiRequest<BackendTask[]>('/api/tasks'),
   create: (payload: CreateTaskPayload) =>
@@ -344,7 +369,25 @@ export const taskApi = {
     apiRequest<{ message: string }>(`/api/tasks/${taskId}`, {
       method: 'DELETE',
     }),
+  checkOverlap: (payload: { deadline: string; estimated_minutes: number; exclude_task_id?: number }) =>
+    apiRequest<OverlapCheckResponse>('/api/tasks/check-overlap', {
+      method: 'POST',
+      body: payload,
+    }),
 };
+
+export const occurrenceApi = {
+  mark: (payload: { task_id: number; occurrence_date: string; status: OccurrenceStatus }) =>
+    apiRequest<{ message: string; occurrence: TaskOccurrence }>('/api/tasks/occurrence', {
+      method: 'POST',
+      body: payload,
+    }),
+  getForDate: (date: string) =>
+    apiRequest<(TaskOccurrence & { task: { title: string; repeat_frequency: string } })[]>(
+      `/api/tasks/occurrences?date=${date}`
+    ),
+};
+
 
 export const reminderApi = {
   listDue: () => apiRequest<BackendReminder[]>('/api/reminders'),
