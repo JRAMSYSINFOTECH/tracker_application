@@ -1,6 +1,6 @@
 import prisma from "../config/prisma.js";
 
-import { markPlanAsStale, spawnNextOccurrence } from "../utils/taskUtils.js";
+import { markPlanAsStale, spawnNextOccurrence, doesTaskOccurOnDate } from "../utils/taskUtils.js";
 
 
 // ✅ Create Task
@@ -56,6 +56,16 @@ export const createTask = async (req, res) => {
         repeat_days: repeat_days || null
       },
     });
+
+    if (req.body.reminder) {
+      await prisma.reminder.create({
+        data: {
+          task_id: task.task_id,
+          remind_at: new Date(deadline),
+          frequency: repeat_frequency || "once"
+        }
+      });
+    }
 
     await markPlanAsStale(userId);
 
@@ -155,6 +165,21 @@ export const updateTask = async (req, res) => {
       }
     });
 
+    if (req.body.deadline || req.body.repeat_frequency) {
+      const existingReminder = await prisma.reminder.findFirst({
+        where: { task_id: taskId }
+      });
+      if (existingReminder) {
+        await prisma.reminder.update({
+          where: { reminder_id: existingReminder.reminder_id },
+          data: {
+            ...(req.body.deadline && { remind_at: new Date(req.body.deadline) }),
+            ...(req.body.repeat_frequency && { frequency: req.body.repeat_frequency })
+          }
+        });
+      }
+    }
+
     if (updatedTask.status === "completed") {
       await spawnNextOccurrence(updatedTask);
     }
@@ -218,38 +243,39 @@ export const checkOverlap = async (req, res) => {
     const startTime = new Date(deadline);
     const endTime = new Date(startTime.getTime() + Number(estimated_minutes) * 60 * 1000);
 
-    // Find tasks whose [deadline, deadline + estimated_minutes] overlaps with [startTime, endTime]
-    // Overlap condition: taskStart < endTime AND taskEnd > startTime
     const userTasks = await prisma.task.findMany({
       where: {
         user_id: userId,
         status: { notIn: ["completed", "missed"] },
         ...(exclude_task_id && { task_id: { not: Number(exclude_task_id) } })
-      },
-      select: {
-        task_id: true,
-        title: true,
-        deadline: true,
-        estimated_minutes: true
       }
     });
 
-    const overlapping = userTasks.filter(task => {
-      const taskStart = new Date(task.deadline);
-      const taskEnd = new Date(taskStart.getTime() + (task.estimated_minutes || 60) * 60 * 1000);
-      // Strict overlap: intervals must actually intersect (touching endpoints = no overlap)
-      return taskStart < endTime && taskEnd > startTime;
-    });
+    const targetDate = new Date(deadline);
+    const overlapping = [];
+
+    for (const task of userTasks) {
+      if (doesTaskOccurOnDate(task, targetDate)) {
+        const taskDate = new Date(task.deadline);
+        const occStart = new Date(targetDate);
+        occStart.setHours(taskDate.getHours(), taskDate.getMinutes(), taskDate.getSeconds(), taskDate.getMilliseconds());
+        const occEnd = new Date(occStart.getTime() + (task.estimated_minutes || 60) * 60 * 1000);
+
+        if (occStart < endTime && occEnd > startTime) {
+          overlapping.push({
+            task_id: task.task_id,
+            title: task.title,
+            start: occStart,
+            end: occEnd
+          });
+        }
+      }
+    }
 
     if (overlapping.length > 0) {
       return res.json({
         hasOverlap: true,
-        conflicts: overlapping.map(t => ({
-          task_id: t.task_id,
-          title: t.title,
-          start: t.deadline,
-          end: new Date(new Date(t.deadline).getTime() + (t.estimated_minutes || 60) * 60 * 1000)
-        }))
+        conflicts: overlapping
       });
     }
 

@@ -35,42 +35,93 @@ type PlanItem = {
   deadlineMs: number; // for overlap computation
 };
 
-// ── Recurrence helpers ────────────────────────────────────────────────
+function getNextOccurrenceDate(task: TaskItem, fromDate: Date): Date | null {
+  const from = new Date(fromDate);
+
+  if (task.repeat_frequency === 'daily') {
+    const next = new Date(from);
+    next.setDate(next.getDate() + 1);
+    return next;
+  }
+
+  if (task.repeat_frequency === 'weekly') {
+    const next = new Date(from);
+    next.setDate(next.getDate() + 7);
+    return next;
+  }
+
+  if (task.repeat_frequency === 'custom' && task.repeat_days) {
+    const days = task.repeat_days
+      .split(',')
+      .map((d) => parseInt(d.trim()))
+      .filter((d) => !isNaN(d) && d >= 0 && d <= 6)
+      .sort((a, b) => a - b);
+
+    if (days.length === 0) return null;
+
+    const currentDayOfWeek = from.getDay();
+    const nextDay = days.find((d) => d > currentDayOfWeek);
+
+    const daysToAdd = nextDay !== undefined
+      ? nextDay - currentDayOfWeek
+      : 7 - currentDayOfWeek + days[0];
+
+    const next = new Date(from);
+    next.setDate(next.getDate() + daysToAdd);
+    return next;
+  }
+
+  return null;
+}
+
 function taskAppearsOnDate(task: TaskItem, dateIso: string): boolean {
-  const target = new Date(dateIso + 'T00:00:00');
+  const [targetYear, targetMonth, targetDay] = dateIso.split('-').map(Number);
+  const targetMidnight = new Date(targetYear, targetMonth - 1, targetDay);
+
   const taskDate = new Date(task.deadline);
-  const taskDateIso = formatDateToISO(taskDate);
+  const taskYear = taskDate.getFullYear();
+  const taskMonth = taskDate.getMonth();
+  const taskDay = taskDate.getDate();
+  const taskMidnight = new Date(taskYear, taskMonth, taskDay);
+
+  if (targetMidnight < taskMidnight) {
+    return false; // Cannot appear before the task's start date
+  }
+
+  // If next instance is already spawned, this historical instance should not appear
+  // on or after the successor's deadline.
+  if (task.next_instance_created) {
+    const nextDate = getNextOccurrenceDate(task, taskDate);
+    if (nextDate) {
+      const nextYear = nextDate.getFullYear();
+      const nextMonth = nextDate.getMonth();
+      const nextDay = nextDate.getDate();
+      const nextMidnight = new Date(nextYear, nextMonth, nextDay);
+      if (targetMidnight >= nextMidnight) {
+        return false;
+      }
+    }
+  }
 
   switch (task.repeat_frequency) {
-    case 'once':
-      // Show only on the task's own deadline date; hide if date has passed
-      return taskDateIso === dateIso;
+    case 'once': {
+      return taskYear === targetYear && taskMonth === targetMonth - 1 && taskDay === targetDay;
+    }
 
     case 'daily':
-      // Show every day on or after the task's start date (unless permanently completed/missed)
-      if (task.status === 'missed') return false;
-      return taskDate <= new Date(dateIso + 'T23:59:59');
+      return true;
 
     case 'weekly': {
-      // Show once per week on the same day-of-week as the original deadline
-      if (task.status === 'missed') return false;
-      const taskDayOfWeek = taskDate.getDay();
-      const targetDayOfWeek = target.getDay();
-      if (taskDayOfWeek !== targetDayOfWeek) return false;
-      return taskDate <= new Date(dateIso + 'T23:59:59');
+      return taskDate.getDay() === targetMidnight.getDay();
     }
 
     case 'custom': {
-      // Show only on days matching repeat_days (e.g. "1,3,5")
-      if (task.status === 'missed') return false;
       if (!task.repeat_days) return false;
       const repeatDayNumbers = task.repeat_days
         .split(',')
         .map((d) => parseInt(d.trim()))
         .filter((d) => !isNaN(d));
-      const targetDOW = target.getDay();
-      if (!repeatDayNumbers.includes(targetDOW)) return false;
-      return taskDate <= new Date(dateIso + 'T23:59:59');
+      return repeatDayNumbers.includes(targetMidnight.getDay());
     }
 
     default:
@@ -184,7 +235,8 @@ export default function TodayPlanScreen() {
   const filters: FilterType[] = ['All', 'ToDo', 'InProgress', 'Completed'];
 
   const selectedDateLabel = useMemo(() => {
-    return formatDateForDisplay(new Date(selectedDate + 'T12:00:00'));
+    const [y, m, d] = selectedDate.split('-').map(Number);
+    return formatDateForDisplay(new Date(y, m - 1, d, 12, 0, 0));
   }, [selectedDate]);
 
   const filteredPlans = useMemo(() => {
@@ -335,7 +387,10 @@ export default function TodayPlanScreen() {
 
         {showPicker && (
           <DateTimePicker
-            value={new Date(selectedDate + 'T12:00:00')}
+            value={(() => {
+              const [y, m, d] = selectedDate.split('-').map(Number);
+              return new Date(y, m - 1, d, 12, 0, 0);
+            })()}
             mode="date"
             display="default"
             onChange={onChangeDate}

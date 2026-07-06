@@ -155,24 +155,17 @@ export async function scheduleRecurringNotification(
         .map((d) => parseInt(d.trim()))
         .filter((d) => !isNaN(d) && d >= 0 && d <= 6);
 
-      const now = new Date();
-      const DAYS_AHEAD = 30; // schedule next 30 days of occurrences
-
-      for (let i = 0; i < DAYS_AHEAD; i++) {
-        const candidate = new Date(now);
-        candidate.setDate(now.getDate() + i);
-        candidate.setHours(taskDate.getHours(), taskDate.getMinutes(), 0, 0);
-
-        // Check if this candidate date's day-of-week is in the repeat_days list
-        if (days.includes(candidate.getDay()) && candidate > now) {
-          await Notifications.scheduleNotificationAsync({
-            content,
-            trigger: {
-              type: Notifications.SchedulableTriggerInputTypes.DATE,
-              date: candidate,
-            },
-          });
-        }
+      for (const day of days) {
+        await Notifications.scheduleNotificationAsync({
+          content,
+          trigger: {
+            type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
+            repeats: true,
+            weekday: day + 1, // expo uses 1-7 (Sun=1)
+            hour: taskDate.getHours(),
+            minute: taskDate.getMinutes(),
+          },
+        });
       }
       return;
     }

@@ -61,49 +61,53 @@ cron.schedule("* * * * *", async () => {
     for (const reminder of reminders) {
       if (!reminder.is_active) continue;
 
-      console.log(`🔔 Reminder: ${reminder.task.title}`);
+      try {
+        console.log(`🔔 Reminder: ${reminder.task.title}`);
 
-      if (reminder.frequency === "once") {
-        // One-shot: deactivate permanently
-        await prisma.reminder.update({
-          where: { reminder_id: reminder.reminder_id },
-          data: { is_active: false }
-        });
-      } else if (reminder.frequency === "daily") {
-        // Daily: advance remind_at by exactly 1 day
-        const nextRemindAt = new Date(reminder.remind_at);
-        nextRemindAt.setDate(nextRemindAt.getDate() + 1);
-        await prisma.reminder.update({
-          where: { reminder_id: reminder.reminder_id },
-          data: { remind_at: nextRemindAt }
-        });
-      } else if (reminder.frequency === "weekly") {
-        // Weekly: advance remind_at by 7 days
-        const nextRemindAt = new Date(reminder.remind_at);
-        nextRemindAt.setDate(nextRemindAt.getDate() + 7);
-        await prisma.reminder.update({
-          where: { reminder_id: reminder.reminder_id },
-          data: { remind_at: nextRemindAt }
-        });
-      } else if (reminder.frequency === "custom") {
-        // Custom: advance to the next matching day from task's repeat_days
-        const mockTask = {
-          repeat_frequency: "custom",
-          repeat_days: reminder.task.repeat_days
-        };
-        const nextDate = getNextOccurrenceDate(mockTask, reminder.remind_at);
-        if (nextDate) {
-          await prisma.reminder.update({
-            where: { reminder_id: reminder.reminder_id },
-            data: { remind_at: nextDate }
-          });
-        } else {
-          // No valid next day found — deactivate
+        if (reminder.frequency === "once") {
+          // One-shot: deactivate permanently
           await prisma.reminder.update({
             where: { reminder_id: reminder.reminder_id },
             data: { is_active: false }
           });
+        } else if (reminder.frequency === "daily") {
+          // Daily: advance remind_at by exactly 1 day
+          const nextRemindAt = new Date(reminder.remind_at);
+          nextRemindAt.setDate(nextRemindAt.getDate() + 1);
+          await prisma.reminder.update({
+            where: { reminder_id: reminder.reminder_id },
+            data: { remind_at: nextRemindAt }
+          });
+        } else if (reminder.frequency === "weekly") {
+          // Weekly: advance remind_at by 7 days
+          const nextRemindAt = new Date(reminder.remind_at);
+          nextRemindAt.setDate(nextRemindAt.getDate() + 7);
+          await prisma.reminder.update({
+            where: { reminder_id: reminder.reminder_id },
+            data: { remind_at: nextRemindAt }
+          });
+        } else if (reminder.frequency === "custom") {
+          // Custom: advance to the next matching day from task's repeat_days
+          const mockTask = {
+            repeat_frequency: "custom",
+            repeat_days: reminder.task.repeat_days
+          };
+          const nextDate = getNextOccurrenceDate(mockTask, reminder.remind_at);
+          if (nextDate) {
+            await prisma.reminder.update({
+              where: { reminder_id: reminder.reminder_id },
+              data: { remind_at: nextDate }
+            });
+          } else {
+            // No valid next day found — deactivate
+            await prisma.reminder.update({
+              where: { reminder_id: reminder.reminder_id },
+              data: { is_active: false }
+            });
+          }
         }
+      } catch (err) {
+        console.error(`Error processing reminder ${reminder.reminder_id}:`, err.message);
       }
     }
 

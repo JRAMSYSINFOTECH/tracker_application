@@ -22,6 +22,7 @@ export type TaskItem = {
   repeat_frequency: 'once' | 'daily' | 'weekly' | 'custom';
   repeat_days?: string | null;
   estimated_minutes: number;
+  next_instance_created: boolean;
 };
 
 
@@ -71,6 +72,7 @@ export const TaskProvider = ({
         repeat_frequency: (task.repeat_frequency ?? 'once') as TaskItem['repeat_frequency'],
         repeat_days: task.repeat_days ?? null,
         estimated_minutes: task.estimated_minutes ?? 60,
+        next_instance_created: task.next_instance_created ?? false,
       }));
 
       setTasks(formattedTasks);
@@ -101,6 +103,7 @@ export const TaskProvider = ({
         repeat_frequency: (response.task.repeat_frequency ?? 'once') as TaskItem['repeat_frequency'],
         repeat_days: response.task.repeat_days ?? null,
         estimated_minutes: response.task.estimated_minutes ?? 60,
+        next_instance_created: response.task.next_instance_created ?? false,
       };
 
       setTasks((prev) => [...prev, newTask]);

@@ -49,6 +49,7 @@ export type BackendTask = {
   status: TaskStatus;
   repeat_frequency: ReminderFrequency;
   repeat_days: string | null;
+  next_instance_created: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -62,6 +63,7 @@ export type CreateTaskPayload = {
   status?: TaskStatus;
   repeat_frequency?: ReminderFrequency;
   repeat_days?: string | null;
+  reminder?: boolean;
 };
 
 

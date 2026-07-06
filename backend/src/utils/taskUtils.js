@@ -103,3 +103,50 @@ export const getNextOccurrenceDate = (task, fromDate) => {
 
   return null;
 };
+
+export const doesTaskOccurOnDate = (task, date) => {
+  const taskDate = new Date(task.deadline);
+  const targetDate = new Date(date);
+  
+  // Compare local year, month, day to see if targetDate is before taskDate
+  const taskYear = taskDate.getFullYear();
+  const taskMonth = taskDate.getMonth();
+  const taskDay = taskDate.getDate();
+  
+  const targetYear = targetDate.getFullYear();
+  const targetMonth = targetDate.getMonth();
+  const targetDay = targetDate.getDate();
+
+  // Create Date objects representing local midnights for comparison
+  const taskMidnight = new Date(taskYear, taskMonth, taskDay);
+  const targetMidnight = new Date(targetYear, targetMonth, targetDay);
+
+  if (targetMidnight < taskMidnight) {
+    return false; // Cannot occur before the task's start date
+  }
+
+  switch (task.repeat_frequency) {
+    case "once":
+      return taskYear === targetYear && taskMonth === targetMonth && taskDay === targetDay;
+
+    case "daily":
+      return true;
+
+    case "weekly": {
+      return taskDate.getDay() === targetDate.getDay();
+    }
+
+    case "custom": {
+      if (!task.repeat_days) return false;
+      const days = task.repeat_days
+        .split(",")
+        .map(d => parseInt(d.trim()))
+        .filter(d => !isNaN(d));
+      return days.includes(targetDate.getDay());
+    }
+
+    default:
+      return false;
+  }
+};
+
