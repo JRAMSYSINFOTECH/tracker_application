@@ -263,7 +263,8 @@ function DraggableCard({
   const [dragging, setDragging] = useState(false);
   const accumulatedDy = useRef(0);
 
-  const SLOT_HEIGHT = 70; // px per 30-min slot
+  const SLOT_HEIGHT = 70; // px per 30 minutes
+  const SNAP_MINUTES = 10;
 
   const panResponder = useRef(
     PanResponder.create({
@@ -287,11 +288,13 @@ function DraggableCard({
         }).start();
 
         setDragging(false);
-        // Convert drag distance → 30-min slots
-        const slotsChanged = Math.round(dy / SLOT_HEIGHT);
-        const minutesChanged = slotsChanged * 30;
+        // Convert drag distance to 10-minute increments so tasks can move out
+        // of partial overlaps like 03:55-04:55 after a 03:35-04:35 task.
+        const rawMinutesChanged = (dy / SLOT_HEIGHT) * 30;
+        const minutesChanged =
+          Math.round(rawMinutesChanged / SNAP_MINUTES) * SNAP_MINUTES;
 
-        if (Math.abs(minutesChanged) >= 30 && item.start_time && item.end_time) {
+        if (Math.abs(minutesChanged) >= SNAP_MINUTES && item.start_time && item.end_time) {
           const newStart = addMinutes(new Date(item.start_time), minutesChanged);
           const newEnd = addMinutes(new Date(item.end_time), minutesChanged);
           onRescheduleRequest(item, newStart, newEnd);
@@ -468,23 +471,7 @@ export default function AISchedulerScreen() {
         new_end: pending.newEnd.toISOString(),
       });
 
-      setPlanItems((prev) =>
-        prev
-          .map((p) =>
-            p.plan_item_id === pending.item.plan_item_id
-              ? {
-                ...p,
-                start_time: pending.newStart.toISOString(),
-                end_time: pending.newEnd.toISOString(),
-              }
-              : p
-          )
-          .sort(
-            (a, b) =>
-              new Date(a.start_time!).getTime() -
-              new Date(b.start_time!).getTime()
-          )
-      );
+      await fetchPlan();
 
       setModalVisible(false);
       setPending(null);
@@ -501,7 +488,7 @@ export default function AISchedulerScreen() {
         'Failed to reschedule task'
       );
     }
-  }, [pending]);
+  }, [fetchPlan, pending]);
   // ── Cancel reschedule ─────────────────────────────────────────────────────
   const handleCancel = useCallback(() => {
     setModalVisible(false);

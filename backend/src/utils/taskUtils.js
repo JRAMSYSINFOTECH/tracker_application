@@ -56,6 +56,13 @@ export const spawnNextOccurrence = async (task) => {
   await markPlanAsStale(task.user_id);
 };
 
+export const getTaskEndTime = (task) => {
+  const start = new Date(task.deadline);
+  const durationMinutes = task.estimated_minutes || 60;
+
+  return new Date(start.getTime() + durationMinutes * 60 * 1000);
+};
+
 /**
  * Given a task and its current deadline, compute the next occurrence date.
  * - daily:  +1 day, same time

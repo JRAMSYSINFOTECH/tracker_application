@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import prisma from "../config/prisma.js";
-import { spawnNextOccurrence, getNextOccurrenceDate } from "./taskUtils.js";
+import { spawnNextOccurrence, getNextOccurrenceDate, getTaskEndTime } from "./taskUtils.js";
 
 cron.schedule("* * * * *", async () => {
   console.log("⏳ Checking reminders...");
@@ -8,16 +8,20 @@ cron.schedule("* * * * *", async () => {
   try {
     const now = new Date();
 
-    // ✅ Only mark NON-recurring tasks as missed when their deadline passes.
+    // ✅ Only mark NON-recurring tasks as missed after their scheduled block ends.
     // Recurring tasks (daily, weekly, custom) should never be permanently missed —
     // they get a new deadline via spawnNextOccurrence instead.
-    const missedTasksList = await prisma.task.findMany({
+    const overdueOnceTasks = await prisma.task.findMany({
       where: {
         deadline: { lt: now },
         status: { in: ["pending", "in_progress"] },
         repeat_frequency: "once"  // ← Only one-off tasks become "missed"
       }
     });
+
+    const missedTasksList = overdueOnceTasks.filter(task =>
+      getTaskEndTime(task) < now
+    );
 
     if (missedTasksList.length > 0) {
       await prisma.task.updateMany({
@@ -114,4 +118,4 @@ cron.schedule("* * * * *", async () => {
   } catch (err) {
     console.error("Cron error:", err.message);
   }
-});
+});

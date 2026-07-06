@@ -75,7 +75,10 @@ export const getTodayPlan = async (req, res) => {
   plan_item_id: true,
   task_id: true,
   slot_order: true,
+  start_time: true,
+  end_time: true,
   item_status: true,
+  confidence_score: true,
   task: {
     select: {
       title: true,

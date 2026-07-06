@@ -1165,6 +1165,25 @@ export const rescheduleItem = async (req, res) => {
           }
         });
 
+        await tx.task.update({
+          where: {
+            task_id: targetItem.task_id
+          },
+          data: {
+            deadline: newStart
+          }
+        });
+
+        await tx.reminder.updateMany({
+          where: {
+            task_id: targetItem.task_id,
+            is_active: true
+          },
+          data: {
+            remind_at: newStart
+          }
+        });
+
         await reorderPlanItemsByStartTime(
           tx,
           targetItem.plan_id
